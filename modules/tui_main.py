@@ -15,7 +15,8 @@ os.environ["QT_IM_MODULE"] = "qtvirtualkeyboard"
 
 
 # -----------------------------------------
-# define custom widgets with text input
+# define custom widgets with text input,
+# they are required for use of virtual keyboard
 # -----------------------------------------
 
 class nxQLineEdit(QLineEdit):
@@ -34,6 +35,21 @@ class nxQLineEdit(QLineEdit):
         super().focusOutEvent(event)
         self.noneFocused.emit()
 
+class nxQDateEdit(QDateEdit):
+
+    focused = pyqtSignal()
+    noneFocused = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.focused.emit()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.noneFocused.emit()
 
 # -----------------------------------------
 # definition of main window
@@ -524,66 +540,28 @@ class tui_MainWindow(object):
         # test.setStyleSheet("QCheckBox::indicator { width: 50px; height: 50px;}")
         # self.vertLayoutWidgets.addWidget(test)
 
-        # widgetsList = [
-        #
-        #     nxQLineEdit,
-        #
-        # ]
-        # widgetsList = [
-        #     aQAnimatedToggle,
-        #     aQCheckBox,
-        #     aQComboBox,
-        #     aQDateEdit,
-        #     aQDateTimeEdit,
-        #     aQDial,
-        #     aQDoubleSpinBox,
-        #     aQFontComboBox,
-        #     aQLCDNumber,
-        #     aQLabel,
-        #     aQLineEdit,
-        #     aQProgressBar,
-        #     aQPushButton,
-        #     aQRadioButton,
-        #     aQSlider,
-        #     aQSpinBox,
-        #     aQTimeEdit,
-        # ]
-        #
-        # widgetsList = [
-        #     # AnimatedToggle,
-        #     QCheckBox,
-        #     QComboBox,
-        #     QDateEdit,
-        #     QDateTimeEdit,
-        #     QDial,
-        #     QDoubleSpinBox,
-        #     QFontComboBox,
-        #     QLCDNumber,
-        #     QLabel,
-        #     QLineEdit,
-        #     QProgressBar,
-        #     QPushButton,
-        #     QRadioButton,
-        #     QSlider,
-        #     QSpinBox,
-        #     QTimeEdit,
-        # # ]
-        #
-        # for w in widgetsList:
-        #     if w==QComboBox:
-        #
-        #         t = QComboBox()
-        #         t.addItem("Geek-1")
-        #         t.addItem("Geek-2")
-        #         t.addItem("Geek-3")
-        #         t.addItem("Geek-4")
-        #         t.addItem("Geek-5")
-        #         t.addItem("Geek-5")
-        #         t.addItem("Geek-6")
-        #
-        #         self.vertLayoutWidgets.addWidget(t)
-        #     else:
-        #         self.vertLayoutWidgets.addWidget(w())
+        widgetsList = [
+
+            nxQLineEdit,
+            nxQDateEdit,
+
+        ]
+
+        for w in widgetsList:
+            if w==nxQComboBox:
+
+                t = QComboBox()
+                t.addItem("Geek-1")
+                t.addItem("Geek-2")
+                t.addItem("Geek-3")
+                t.addItem("Geek-4")
+                t.addItem("Geek-5")
+                t.addItem("Geek-5")
+                t.addItem("Geek-6")
+
+                self.vertLayoutWidgets.addWidget(t)
+            else:
+                self.vertLayoutWidgets.addWidget(w())
 
         self.stackedWidget.addWidget(self.widgets)
 
