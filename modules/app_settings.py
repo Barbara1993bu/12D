@@ -3,7 +3,7 @@ class Settings():
 
     # application settings
     MENU_WIDTH = 250
-    TIME_ANIMATION = 150
+    TIME_ANIMATION = 0
     KEYBOARD_TIME_ANIMATION = 0
     RIGHT_BOX_WIDTH = 250
     KEYBOARD_BOX_HEIGHT = 320

@@ -141,25 +141,27 @@ class TUIFunctions(MainWindow):
 
             # get height
             height = self.tui.keyboardBox.height()
-
             heightContentBox = self.tui.mainContentFrame.height()
-
             maxExtend = Settings.KEYBOARD_BOX_HEIGHT
 
-            standard = 0
+            standardExtend = 0
 
             # SET MAX HEIGHT
             if height == 0:
-                heightExtended = maxExtend
-                # if heightKeyboardBox != 0:
-                #     self.tui.toggleLeftBox.setStyleSheet(style.replace(Settings.BTN_LEFT_BOX_COLOR, ''))
-            else:
-                heightExtended = standard
-                # RESET BTN
-                # self.tui.moreSettingsBtn.setStyleSheet(style.replace(color, ''))
+                heightExtend = maxExtend
 
-            TUIFunctions.start_keyboard_box_animation(
-                self, heightContentBox, height)
+            else:
+                heightExtend = standardExtend
+
+            TUIFunctions.start_keyboard_box_animation(self, heightContentBox, height, heightExtend)
+
+        else:
+
+            height = self.tui.keyboardBox.height()
+            heightContentBox = self.tui.mainContentFrame.height()
+
+            QApplication.instance().inputMethod().hide()
+            TUIFunctions.start_keyboard_box_animation(self, heightContentBox, height, 0)
 
     def start_box_animation(self, left_box_width, right_box_width, direction):
 
@@ -191,14 +193,12 @@ class TUIFunctions(MainWindow):
         self.group.addAnimation(self.right_box)
         self.group.start()
 
-    def start_keyboard_box_animation(
-            self, content_box_height, keyboard_box_height):
 
-        keyboard_height = 0
+    def start_keyboard_box_animation(self, content_box_height, keyboard_box_height, heightExtend):
 
         # Check values
         if keyboard_box_height == 0:
-            keyboard_height = 320
+            keyboard_height = heightExtend
 
             self.tui.keyboardBox.setStyleSheet(u"background-color: #000000;")
             self.tui.keyboardwidget.setStyleSheet(
@@ -208,8 +208,7 @@ class TUIFunctions(MainWindow):
             keyboard_height = 0
 
         # ANIMATION KEYBOARD BOX
-        self.keyboard_box = QPropertyAnimation(
-            self.tui.keyboardBox, b"minimumHeight")
+        self.keyboard_box = QPropertyAnimation(self.tui.keyboardBox, b"minimumHeight")
         self.keyboard_box.setDuration(Settings.KEYBOARD_TIME_ANIMATION)
         self.keyboard_box.setStartValue(keyboard_box_height)
         self.keyboard_box.setEndValue(keyboard_height)
@@ -219,6 +218,8 @@ class TUIFunctions(MainWindow):
         self.group = QParallelAnimationGroup()
         self.group.addAnimation(self.keyboard_box)
         self.group.start()
+
+        print(f'after anim {self.tui.keyboardBox.height()}')
 
     # select/deselect page
     # select

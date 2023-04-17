@@ -51,6 +51,70 @@ class nxQDateEdit(QDateEdit):
         super().focusOutEvent(event)
         self.noneFocused.emit()
 
+class nxQDateTimeEdit(QDateTimeEdit):
+
+    focused = pyqtSignal()
+    noneFocused = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.focused.emit()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.noneFocused.emit()
+
+class nxQDoubleSpinBox(QDoubleSpinBox):
+
+    focused = pyqtSignal()
+    noneFocused = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.focused.emit()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.noneFocused.emit()
+
+class nxQDoubleSpinBox(QDoubleSpinBox):
+
+    focused = pyqtSignal()
+    noneFocused = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.focused.emit()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.noneFocused.emit()
+
+class nxQTimeEdit(QTimeEdit):
+
+    focused = pyqtSignal()
+    noneFocused = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.focused.emit()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.noneFocused.emit()
+
 # -----------------------------------------
 # definition of main window
 # -----------------------------------------
@@ -59,8 +123,13 @@ class tui_MainWindow(object):
 
     def setup_tui(self, MainWindow):
 
+        # # initizalize custom widgets
 
         self.nxQLineEdit = nxQLineEdit()
+        self.nxQDateEdit = nxQDateEdit()
+        self.nxQDateTimeEdit = nxQDateTimeEdit()
+        self.nxQDoubleSpinBox = nxQDoubleSpinBox()
+        self.nxQTimeEdit = nxQTimeEdit()
 
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
@@ -533,35 +602,25 @@ class tui_MainWindow(object):
         self.vertLayoutWidgets.setObjectName(u"vertLayoutWidgets")
 
 
-        # self.testinput = self.nxQLineEdit
-        self.vertLayoutWidgets.addWidget(self.nxQLineEdit)
+        # # self.testinput = self.nxQLineEdit
+        # self.vertLayoutWidgets.addWidget(self.nxQLineEdit)
 
         # test = QCheckBox()
         # test.setStyleSheet("QCheckBox::indicator { width: 50px; height: 50px;}")
         # self.vertLayoutWidgets.addWidget(test)
 
-        widgetsList = [
 
-            nxQLineEdit,
-            nxQDateEdit,
 
-        ]
+        self.vertLayoutWidgets.addWidget(self.nxQLineEdit)
 
-        for w in widgetsList:
-            if w==nxQComboBox:
+        self.vertLayoutWidgets.addWidget(self.nxQDateEdit)
 
-                t = QComboBox()
-                t.addItem("Geek-1")
-                t.addItem("Geek-2")
-                t.addItem("Geek-3")
-                t.addItem("Geek-4")
-                t.addItem("Geek-5")
-                t.addItem("Geek-5")
-                t.addItem("Geek-6")
+        self.vertLayoutWidgets.addWidget(self.nxQDateTimeEdit)
 
-                self.vertLayoutWidgets.addWidget(t)
-            else:
-                self.vertLayoutWidgets.addWidget(w())
+        self.vertLayoutWidgets.addWidget(self.nxQDoubleSpinBox)
+        self.vertLayoutWidgets.addWidget(self.nxQTimeEdit)
+        # self.vertLayoutWidgets.addWidget(self.nxQTimeEdit)
+
 
         self.stackedWidget.addWidget(self.widgets)
 

@@ -1,3 +1,4 @@
+import time
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
@@ -66,18 +67,40 @@ class MainWindow(QMainWindow):
         widgets.moreSettingsBtn.clicked.connect(openCloseMoreSettingsTab)
 
         # open and close Keyboard Tab
-        def openCloseKeyboardTab():
+        def openKeyboardTab():
 
-            if not self.check_virtual_keyboard_visibility():
+            if self.check_virtual_keyboard_visibility() and self.tui.keyboardBox.height() != 0:
+                pass
+
+            if not self.check_virtual_keyboard_visibility() and self.tui.keyboardBox.height() != 0:
+                QApplication.instance().inputMethod().show()
+
+            elif not self.check_virtual_keyboard_visibility() and self.tui.keyboardBox.height() == 0:
                 TUIFunctions.toggleKeyboardTab(self, True)
                 QApplication.instance().inputMethod().show()
-            else:
-                TUIFunctions.toggleKeyboardTab(self, False)
-                QApplication.instance().inputMethod().hide()
+
+        def closeKeyboardTab():
+
+            TUIFunctions.toggleKeyboardTab(self, True)
+            self.tui.keyboardBox.setGeometry(QRect(0, 0, 1920, 0))
+
 
         # definition of virtual keyboard triggers
-        widgets.nxQLineEdit.focused.connect(openCloseKeyboardTab)
-        widgets.nxQLineEdit.noneFocused.connect(openCloseKeyboardTab)
+        widgets.nxQLineEdit.focused.connect(openKeyboardTab)
+        widgets.nxQLineEdit.noneFocused.connect(closeKeyboardTab)
+        # nxQDateEdit trigger
+        widgets.nxQDateEdit.focused.connect(openKeyboardTab)
+        widgets.nxQDateEdit.noneFocused.connect(closeKeyboardTab)
+        # nxQDateTimeEdit trigger
+        widgets.nxQDateTimeEdit.focused.connect(openKeyboardTab)
+        widgets.nxQDateTimeEdit.noneFocused.connect(closeKeyboardTab)
+        # nxQDoubleSpinBox trigger
+        widgets.nxQDoubleSpinBox.focused.connect(openKeyboardTab)
+        widgets.nxQDoubleSpinBox.noneFocused.connect(closeKeyboardTab)
+        # nxQDateTimeEdit trigger
+        widgets.nxQTimeEdit.focused.connect(openKeyboardTab)
+        widgets.nxQTimeEdit.noneFocused.connect(closeKeyboardTab)
+
 
         # show application
         self.show()
@@ -134,7 +157,7 @@ class MainWindow(QMainWindow):
             btn.setStyleSheet(TUIFunctions.selectMenu(btn.styleSheet()))
 
         # print btn name
-        print(f'Button "{btnName}" pressed!')
+        # print(f'Button "{btnName}" pressed!')
 
     # mouse click event
     def mousePressEvent(self, event):
