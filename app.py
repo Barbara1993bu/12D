@@ -31,11 +31,15 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # make app full-screen
-        # self.setWindowState(self.windowState() | Qt.WindowFullScreen)
+        self.setWindowState(self.windowState() | Qt.WindowFullScreen)
 
         # load main window frame and apply setup
         self.tui = tui_MainWindow()
         self.tui.setup_tui(self)
+
+        # create pool for new threads
+        self.threadpool = QThreadPool()
+        print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
         # declare all app widgets
         global widgets
@@ -101,6 +105,8 @@ class MainWindow(QMainWindow):
         widgets.nxQTimeEdit.focused.connect(openKeyboardTab)
         widgets.nxQTimeEdit.noneFocused.connect(closeKeyboardTab)
 
+        # self.tui.btn_restartApp.clicked.connect(self.restart)
+
         # show application
         self.show()
 
@@ -158,6 +164,7 @@ class MainWindow(QMainWindow):
         # print btn name
         # print(f'Button "{btnName}" pressed!')
 
+
     # mouse click event
     def mousePressEvent(self, event):
 
@@ -181,6 +188,56 @@ class MainWindow(QMainWindow):
             return virtual_keyboard.isVisible()
         except BaseException:
             raise Exception("Sorry, virtual keyboard can not be found!")
+
+    # def restart(self):
+    #     dialog = QDialog(self, flags=Qt.Dialog)
+    #     dialog.setWindowTitle("Popup Window")
+    #     dialog.exec_()
+    #
+    # def restart(self):
+    #
+    #     dialog = QDialog(self, flags=Qt.Dialog)
+    #     dialog.setWindowTitle("Popup Window")
+    #     dialog.exec_()
+
+        #
+        #
+        # # pass
+        #
+        # msg = QMessageBox()
+        # msg.setIcon(QMessageBox.Information)
+        # msg.setText("This is a message box!")
+        # msg.setWindowTitle("Message Box Example")
+        # msg.setStandardButtons(QMessageBox.Ok)
+        #
+        # # Show the message box
+        # retval = msg.exec_()
+        # if retval == QMessageBox.Ok:
+        #     print("OK clicked")
+
+        # def _restart(progress_callback):
+        #     msg = QMessageBox()
+        #     msg.setIcon(QMessageBox.Information)
+        #     msg.setText("This is a message box!")
+        #     msg.setWindowTitle("Message Box Example")
+        #     msg.setStandardButtons(QMessageBox.Ok)
+        #
+        #     # Show the message box
+        #     retval = msg.exec_()
+        #     if retval == QMessageBox.Ok:
+        #         print("OK clicked")
+        #
+        # worker = Worker(_restart)  # Any other args, kwargs are passed to the run function
+        # # worker.signals.result.connect(self.print_output)
+        # # worker.signals.finished.connect(self.thread_complete)
+        # # worker.signals.progress.connect(self.progress_fn)
+        #
+        # # Execute
+        # self.threadpool.start(worker)
+        #
+        # # QCoreApplication.quit()
+        # # status = QProcess.startDetached(sys.executable, sys.argv)
+        # # print(status)
 
 
 if __name__ == "__main__":

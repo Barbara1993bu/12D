@@ -123,7 +123,7 @@ class tui_MainWindow(object):
 
     def setup_tui(self, MainWindow):
 
-        # # initizalize custom widgets
+        # initizalize custom widgets
 
         self.nxQLineEdit = nxQLineEdit()
         self.nxQDateEdit = nxQDateEdit()
@@ -134,8 +134,8 @@ class tui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
 
-        MainWindow.resize(1920, 1080)
-        MainWindow.setMinimumSize(QSize(1920, 1080))
+        # MainWindow.resize(1918, 1078)
+        # MainWindow.setMinimumSize(QSize(1920, 1080))
 
         # -----------------------------------------
         # styles and background
