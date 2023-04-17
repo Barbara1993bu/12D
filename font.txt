@@ -1,0 +1,6 @@
+classic  Leelawadee UI
+semilight Leelawadee UI Semilight
+bold  Leelawadee UI Bold
+
+
+size: 10,12

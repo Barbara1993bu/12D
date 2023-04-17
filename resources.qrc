@@ -1,0 +1,28 @@
+<RCC>
+    <qresource prefix="src">
+        <file>src/keyboard.qml</file>
+    </qresource>
+  <qresource prefix="images">
+    <file>images/images/NX_logo.png</file>
+    <file>images/images/NX_logo_small.png</file>
+  </qresource>
+  <qresource prefix="icons">
+    <file>images/icons/menu.svg</file>
+    <file>images/icons/home.svg</file>
+    <file>images/icons/play.svg</file>
+    <file>images/icons/archive.svg</file>
+    <file>images/icons/save.svg</file>
+    <file>images/icons/file.svg</file>
+    <file>images/icons/minimize.svg</file>
+    <file>images/icons/maximize.svg</file>
+    <file>images/icons/x.svg</file>
+    <file>images/icons/x-circle.svg</file>
+    <file>images/icons/refresh-cw.svg</file>
+    <file>images/icons/power.svg</file>
+    <file>images/icons/tool.svg</file>
+    <file>images/icons/settings.svg</file>
+    <file>images/icons/rotate-ccw.svg</file>
+    <file>images/icons/check.svg</file>
+    <file>images/icons/arrow-down.svg</file>
+  </qresource>
+</RCC>

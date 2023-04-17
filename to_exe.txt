@@ -1,0 +1,5 @@
+
+pyinstaller --noconsole --onefile --hidden-import --additional-hooks-dir=.  --icon=nx_logo.ico --add-data="nx_logo.ico;." app.py
+
+
+pyinstaller make_app.spec

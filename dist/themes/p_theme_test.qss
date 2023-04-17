@@ -1,0 +1,360 @@
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+Background App */
+
+#bgApp {	
+	background-color: #f7f7f5;
+	border: 1px solid #e3e1e1;
+    	color: #768fa3;
+}
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+Left Menu */
+
+#leftMenuBg {	
+	background-color: #5a96e6;
+}
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+Header */
+
+#headerLogo {
+	background-color: #3c7bcf;
+	background-image: url(:/images/images/images/NX_logo_small.png);
+	background-position: centered;
+	background-repeat: no-repeat;
+}
+#appTitle { font: 63 18pt "Segoe UI Semibold"; color: #FFF1D0; }
+
+#appTitleDescription { font: 12pt "Segoe UI Semibold Italic"; color: #FFF1D0; }
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+/* MENUS */
+
+#topMenu .QPushButton {	
+	background-position: left center;
+    	background-repeat: no-repeat;
+	border: none;
+	border-left: 35px solid transparent;
+	background-color: transparent;
+	text-align: left;
+	padding-left: 80px;
+    	color: #f8f8f2;
+}
+
+#topMenu .QPushButton:hover {
+	background-color: #93e1f9;
+}
+
+#topMenu .QPushButton:pressed {	
+	background-color: #1372ed;
+	color: rgb(255, 255, 255);
+}
+
+
+
+#bottomMenu .QPushButton {	
+	background-position: left center;
+    	background-repeat: no-repeat;
+	border: none;
+	border-left: 35px solid transparent;
+	background-color: transparent;
+	text-align: left;
+	padding-left: 80px;
+    	color: #f8f8f2;
+}
+
+#bottomMenu .QPushButton:hover {
+	background-color: #93e1f9;
+}
+
+#bottomMenu .QPushButton:pressed {	
+	background-color: #1372ed;
+	color: rgb(255, 255, 255);
+}
+
+#leftMenuFrame{
+	border-top: 0px solid #93e1f9;
+	border-left: 0px solid #93e1f9;
+}
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+/* Toggle Button */
+
+#toggleButton {	
+	background-position: left center;
+    	background-repeat: no-repeat;
+	border: none;
+	border-left: 35px solid transparent;
+	background-color: transparent;
+	text-align: left;
+	padding-left: 80px;
+    	color: #f8f8f2;
+}
+
+#toggleButton:hover {
+	background-color: #93e1f9;
+}
+#toggleButton:pressed {		
+	background-color: #1372ed;
+	color: rgb(255, 255, 255);
+}
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+/* Top Menu */
+
+#topFrameApp .QPushButton {
+    background-position: left center;
+    background-repeat: no-repeat;
+	border: none;
+	border-left: 22px solid transparent;
+	background-color:transparent;
+	text-align: left;
+	padding-left: 44px;
+    color: #f8f8f2;
+}
+
+#topMenu .QPushButton:hover {
+	background-color: #93e1f9;
+}
+
+#topMenu .QPushButton:pressed {	
+	background-color: #1372ed;
+	color: rgb(255, 255, 255);
+}
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+/* Top Buttons */
+#headerRightButtons .QPushButton {
+ 	background-color: rgba(255, 255, 255, 0);
+ 	border: none;
+ 	border-radius: 5px;
+ }
+
+#headerRightButtons .QPushButton:hover {
+ 	background-color: #93e1f9;
+	border-style: solid;
+	border-radius: 4px; }
+
+#headerRightButtons .QPushButton:pressed {
+ 	background-color: #1372ed;
+ 	border-style: solid;
+ 	border-radius: 4px;
+ }
+
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+Content App */
+
+#headerTopBg{	
+	background-color: #3c7bcf;
+}
+
+#contentBottom{
+	border-top: 3px solid #3c7bcf;
+}
+
+#titleRightInfo{
+    color: #f8f8f2;
+}
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+Theme Settings */
+
+#extraRightBox { 
+	background-color: #5a96e6;
+}
+
+
+/* Bottom Bar */
+#bottomBar { 
+	background-color: #495474
+}
+
+#bottomBar QLabel {
+	font-size: 11px;
+	color: #f8f8f2;
+	padding-left: 10px;
+ 	padding-right: 10px;
+ 	padding-bottom: 2px;
+}
+
+
+
+
+
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+Widget Definition */
+/* //////////////////////////////////////////////////////////////////////////////////////////////// */
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+CheckBox */
+
+QCheckBox::indicator {
+    border: 3px solid #aeadac;
+	width: 30px;
+	height: 30px;
+	border-radius: 0px;
+    background: #aeadac;
+}
+
+QCheckBox::indicator:hover {
+    border: 3px solid #4400B0EE;
+}
+
+QCheckBox::indicator:checked {
+    background: 3px solid #4400B0EE;
+	border: 3px solid #4400B0EE;	
+	background-image: url(:/icons/images/icons/check.svg);
+	background-repeat: no-repeat;
+	 background-position: center;
+}
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+QComboBox */
+
+QComboBox{
+    background-color: #7284b9;
+    border-style: solid;
+    border-width: 3px;
+    border-radius: 3px;
+    border-color: #7284b9;
+    font: bold 16px;
+    min-width: 10em;
+    padding: 6px;
+}
+
+
+QComboBox:hover{
+	border: 3px solid #3c7bcf;
+}
+
+
+QComboBox::drop-down {
+
+	subcontrol-origin: padding;
+	subcontrol-position: top right;
+	width: 35px; 
+	border-left-width: 3px;
+	border-left-color: #7284b9;
+	border-left-style: solid;
+	border-top-right-radius: 3px;
+	border-bottom-right-radius: 3px;	
+	background-image: url(:/icons/images/icons/arrow-down.svg);
+	background-position: center;
+	background-repeat: no-reperat;
+ }
+
+QComboBox QAbstractItemView {
+	color: #000000;	
+	background-color:  #3c7bcf;
+	padding: 15px;
+	selection-background-color: #4400B0EE;
+}
+
+
+
+/* ///////////////////////////////////////////////////////////////////////////////////////////
+Button */
+
+#pagesContainer QPushButton {
+	border: 3px solid #7284b9;
+	border-radius: 3px;	
+	background-color: #7284b9;
+    color: #f8f8f2;
+}
+#pagesContainer QPushButton:hover {
+	background-color: #3c7bcf;
+	border: 3px solid #3c7bcf;
+}
+#pagesContainer QPushButton:pressed {	
+	background-color: #3c7bcf;
+	border: 3px solid #3c7bcf;
+}
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+Sliders */
+
+QSlider::groove:horizontal {
+    border-radius: 15px;
+    height: 10px;
+	margin: 10px;
+	background-color: #aeadac;
+}
+QSlider::groove:horizontal:hover {
+	background-color:  #aeadac;
+}
+QSlider::handle:horizontal {
+    background-color: #1372ed;
+    border: none;
+    height: 30px;
+    width: 30px;
+    margin: 0px;
+	border-radius: 5px;
+}
+QSlider::handle:horizontal:hover {
+    background-color: #1372ed;
+}
+QSlider::handle:horizontal:pressed {
+    background-color: #93e1f9;
+}
+
+
+QSlider::groove:vertical {
+    border-radius: 15px;
+    width: 10px;
+    margin: 10px;
+	background-color:  #aeadac;
+}
+QSlider::groove:vertical:hover {
+	background-color:  #aeadac;
+}
+QSlider::handle:vertical {
+    background-color: #1372ed;
+	border: none;
+    height: 30px;
+    width: 30px;
+    margin: 0px;
+	border-radius: 5px;
+}
+QSlider::handle:vertical:hover {
+    background-color: #1372ed;
+}
+QSlider::handle:vertical:pressed {
+    background-color: #93e1f9;
+}
+
+
+/* /////////////////////////////////////////////////////////////////////////////////////////////////
+RadioButton */
+QRadioButton::indicator {
+    border: 3px solid #aeadac;
+	width: 30px;
+	height: 30px;
+	border-radius: 0px;
+    background: #aeadac;
+}
+QRadioButton::indicator:hover {
+    border: 3px solid #4400B0EE;
+}
+QRadioButton::indicator:checked {
+    background: 3px solid #4400B0EE;
+	border: 3px solid #4400B0EE;		
+	background-image: url(:/icons/images/icons/check.svg);
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+
+
+

@@ -1,0 +1,19 @@
+old / new 
+
+#f8f8f2  #f7f7f5
+
+#CCC #e3e1e1
+
+#44475a #768fa3
+
+#6272a4 #5a96e6
+
+#f8f8f2 #FFF1D0
+
+#bd93f9 #ffffb3
+
+#bd93f9 #93e1f9
+ 
+#ff79c6 #6a9dad
+
+#ff79c6 #93e1f9
