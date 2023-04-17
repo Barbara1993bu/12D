@@ -72,7 +72,8 @@ class MainWindow(QMainWindow):
             if self.check_virtual_keyboard_visibility() and self.tui.keyboardBox.height() != 0:
                 pass
 
-            if not self.check_virtual_keyboard_visibility() and self.tui.keyboardBox.height() != 0:
+            if not self.check_virtual_keyboard_visibility(
+            ) and self.tui.keyboardBox.height() != 0:
                 QApplication.instance().inputMethod().show()
 
             elif not self.check_virtual_keyboard_visibility() and self.tui.keyboardBox.height() == 0:
@@ -83,7 +84,6 @@ class MainWindow(QMainWindow):
 
             TUIFunctions.toggleKeyboardTab(self, True)
             self.tui.keyboardBox.setGeometry(QRect(0, 0, 1920, 0))
-
 
         # definition of virtual keyboard triggers
         widgets.nxQLineEdit.focused.connect(openKeyboardTab)
@@ -100,7 +100,6 @@ class MainWindow(QMainWindow):
         # nxQDateTimeEdit trigger
         widgets.nxQTimeEdit.focused.connect(openKeyboardTab)
         widgets.nxQTimeEdit.noneFocused.connect(closeKeyboardTab)
-
 
         # show application
         self.show()
@@ -171,16 +170,16 @@ class MainWindow(QMainWindow):
 
         if event.buttons() == Qt.RightButton:
             print('Mouse click: RIGHT CLICK')
-            print(self.check_virtual_keyboard_visibility())
 
     def check_virtual_keyboard_visibility(self):
+
         # Get the virtual keyboard widget using its object name
         virtual_keyboard = QApplication.instance().inputMethod()
 
         # Check if the virtual keyboard widget is visible
         try:
             return virtual_keyboard.isVisible()
-        except:
+        except BaseException:
             raise Exception("Sorry, virtual keyboard can not be found!")
 
 

@@ -33,37 +33,6 @@ def shut_down():
 
 class TUIFunctions(MainWindow):
 
-    # # maximize/restore main window
-    # def maximize_restore(self):
-    #
-    #     global GLOBAL_STATE
-    #     status = GLOBAL_STATE
-    #
-    #     if status == False:
-    #         self.showMaximized()
-    #         GLOBAL_STATE = True
-    #         self.tui.appMargins.setContentsMargins(0, 0, 0, 0)
-    #         self.tui.maximizeRestoreAppBtn.setToolTip("Restore")
-    #         self.tui.maximizeRestoreAppBtn.setIcon(QIcon(u":/icons/images/icons/icon_restore.png"))
-    #         self.tui.frame_size_grip.hide()
-    #         self.left_grip.hide()
-    #         self.right_grip.hide()
-    #         self.top_grip.hide()
-    #         self.bottom_grip.hide()
-    #
-    #     else:
-    #         GLOBAL_STATE = False
-    #         self.showNormal()
-    #         self.resize(self.width()+1, self.height()+1)
-    #         self.tui.appMargins.setContentsMargins(10, 10, 10, 10)
-    #         self.tui.maximizeRestoreAppBtn.setToolTip("Maximize")
-    #         self.tui.maximizeRestoreAppBtn.setIcon(QIcon(u":/icons/images/icons/icon_maximize.png"))
-    #         self.tui.frame_size_grip.show()
-    #         self.left_grip.show()
-    #         self.right_grip.show()
-    #         self.top_grip.show()
-    #         self.bottom_grip.show()
-
     # return status
     def returStatus(self):
         return GLOBAL_STATE
@@ -100,10 +69,7 @@ class TUIFunctions(MainWindow):
             self.animation.start()
 
     # toggle right tab
-
     def toggleRightTab(self, enable):
-
-        time.sleep(0.1)
 
         if enable:
             # get width
@@ -113,13 +79,13 @@ class TUIFunctions(MainWindow):
             color = Settings.BTN_RIGHT_BOX_COLOR
             standard = 0
 
-            # GET BTN STYLE
+            # get btn style
             style = self.tui.moreSettingsBtn.styleSheet()
 
-            # SET MAX WIDTH
+            # set max width
             if width == 0:
                 widthExtended = maxExtend
-                # SELECT BTN
+                # select btn
                 self.tui.moreSettingsBtn.setStyleSheet(style + color)
                 if widthLeftBox != 0:
                     style = self.tui.toggleLeftBox.styleSheet()
@@ -127,14 +93,14 @@ class TUIFunctions(MainWindow):
                         style.replace(Settings.BTN_LEFT_BOX_COLOR, ''))
             else:
                 widthExtended = standard
-                # RESET BTN
+                # reset btn
                 self.tui.moreSettingsBtn.setStyleSheet(
                     style.replace(color, ''))
 
             TUIFunctions.start_box_animation(
                 self, widthLeftBox, width, "right")
 
-    # toggle right tab
+    # toggle virtual keyboard tab
     def toggleKeyboardTab(self, enable):
 
         if enable:
@@ -146,40 +112,33 @@ class TUIFunctions(MainWindow):
 
             standardExtend = 0
 
-            # SET MAX HEIGHT
+            # set max height
             if height == 0:
                 heightExtend = maxExtend
 
             else:
                 heightExtend = standardExtend
 
-            TUIFunctions.start_keyboard_box_animation(self, heightContentBox, height, heightExtend)
-
-        else:
-
-            height = self.tui.keyboardBox.height()
-            heightContentBox = self.tui.mainContentFrame.height()
-
-            QApplication.instance().inputMethod().hide()
-            TUIFunctions.start_keyboard_box_animation(self, heightContentBox, height, 0)
+            TUIFunctions.start_keyboard_box_animation(
+                self, heightContentBox, height, heightExtend)
 
     def start_box_animation(self, left_box_width, right_box_width, direction):
 
         right_width = 0
         left_width = 0
 
-        # Check values
+        # check values
         if left_box_width == 0 and direction == "left":
             left_width = 250
         else:
             left_width = 0
-        # Check values
+        # check values
         if right_box_width == 0 and direction == "right":
             right_width = 250
         else:
             right_width = 0
 
-        # ANIMATION RIGHT BOX
+        # animation right box
         self.right_box = QPropertyAnimation(
             self.tui.extraRightBox, b"minimumWidth")
         self.right_box.setDuration(Settings.TIME_ANIMATION)
@@ -187,16 +146,15 @@ class TUIFunctions(MainWindow):
         self.right_box.setEndValue(right_width)
         self.right_box.setEasingCurve(QEasingCurve.InOutQuart)
 
-        # GROUP ANIMATION
+        # group animation
         self.group = QParallelAnimationGroup()
-        # self.group.addAnimation(self.left_box)
         self.group.addAnimation(self.right_box)
         self.group.start()
 
+    def start_keyboard_box_animation(
+            self, content_box_height, keyboard_box_height, heightExtend):
 
-    def start_keyboard_box_animation(self, content_box_height, keyboard_box_height, heightExtend):
-
-        # Check values
+        # check size values
         if keyboard_box_height == 0:
             keyboard_height = heightExtend
 
@@ -207,19 +165,18 @@ class TUIFunctions(MainWindow):
         else:
             keyboard_height = 0
 
-        # ANIMATION KEYBOARD BOX
-        self.keyboard_box = QPropertyAnimation(self.tui.keyboardBox, b"minimumHeight")
+        # animation keyboard box
+        self.keyboard_box = QPropertyAnimation(
+            self.tui.keyboardBox, b"minimumHeight")
         self.keyboard_box.setDuration(Settings.KEYBOARD_TIME_ANIMATION)
         self.keyboard_box.setStartValue(keyboard_box_height)
         self.keyboard_box.setEndValue(keyboard_height)
         self.keyboard_box.setEasingCurve(QEasingCurve.InOutQuart)
 
-        # GROUP ANIMATION
+        # animation
         self.group = QParallelAnimationGroup()
         self.group.addAnimation(self.keyboard_box)
         self.group.start()
-
-        print(f'after anim {self.tui.keyboardBox.height()}')
 
     # select/deselect page
     # select
@@ -255,7 +212,7 @@ class TUIFunctions(MainWindow):
             str = open(file, 'r').read()
             self.tui.styleSheet.setStyleSheet(str)
 
-    # TUI definitions
+    # tui definitions
     def tuiDefinitions(self):
 
         self.tui.appMargins.setContentsMargins(0, 0, 0, 0)
