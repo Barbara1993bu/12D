@@ -24,5 +24,7 @@
     <file>images/icons/rotate-ccw.svg</file>
     <file>images/icons/check.svg</file>
     <file>images/icons/arrow-down.svg</file>
+    <file>images/icons/smile.svg</file>
+    <file>images/icons/alert-circle.svg</file>
   </qresource>
 </RCC>

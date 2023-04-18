@@ -120,6 +120,7 @@ def shut_down():
 
 class TUIFunctions(MainWindow):
 
+
     # return status
     def returStatus(self):
         return GLOBAL_STATE
@@ -331,7 +332,8 @@ class TUIFunctions(MainWindow):
         self.tui.btn_closeApp.clicked.connect(lambda: self.close())
 
         # restart application
-        self.tui.btn_restartApp.clicked.connect(lambda: self.restart())
+        # self.tui.btn_restartApp.clicked.connect(restart)
+        self.tui.btn_restartApp.clicked.connect(lambda: self._restart())
 
         # reboot device
         # self.tui.btn_rebootDevice.clicked.connect(reboot)
