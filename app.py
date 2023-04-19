@@ -195,21 +195,80 @@ class MainWindow(QMainWindow):
         except BaseException:
             raise Exception("Sorry, virtual keyboard can not be found!")
 
+    # def _restart(self):
+    #
+    #     self.msg = QMessageBox()
+    #     self.msg.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+    #     self.msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+    #     # self.msg.setIconPixmap(QPixmap(u":/icons/images/icons/alert-circle.svg"))
+    #     self.msg.setStyleSheet("QLabel{max-width:350 px; min-height:0 px; font-size: 32px; background-color: #3c7bcf;} QPushButton{ width:150px; height:50px; font-size: 28px; background-color: #3c7bcf; }")
+    #
+    #     # Show the message box
+    #     retval = self.msg.exec_()
+    #
+    #     if retval == QMessageBox.Ok:
+    #         QCoreApplication.quit()
+    #         status = QProcess.startDetached(sys.executable, sys.argv)
+    #         print(status)
+
+
+
+
     def _restart(self):
 
-        self.msg = QMessageBox()
-        self.msg.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
-        self.msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        # self.msg.setIconPixmap(QPixmap(u":/icons/images/icons/alert-circle.svg"))
-        self.msg.setStyleSheet("QLabel{max-width:350 px; min-height:0 px; font-size: 32px; background-color: #3c7bcf;} QPushButton{ width:150px; height:50px; font-size: 28px; background-color: #3c7bcf; }")
+        self.msgRestartBox = QMessageBox()
+        self.msgRestartBox.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        # msgBox.setWindowTitle("Custom Button with Icon")
+        self.msgRestartBox.setStyleSheet("QLabel{"
+                       "max-width:350 px;"
+                       " min-height:0 px;"
+                       " font-size: 18px;"
+                       " background-color: #3c7bcf;"
+                       "}")
 
-        # Show the message box
-        retval = self.msg.exec_()
+        # Create custom button with icon
+        customButtonYes = QPushButton(QIcon(u":/icons/images/icons/check-circle.svg"), "")
+        customButtonYes.setStyleSheet("QPushButton {"
+                                   "width:150px;"
+                                   "height:50px;"
+                                   "background-color: #3f78bf;"
+                                   "color: white;"
+                                   "border-style: outset;"
+                                   "border-width: 2px;"
+                                   "border-radius: 10px;"
+                                   "border-color: #8f8f91;"
+                                   "font: bold 14px;"
+                                   "min-width: 10em;"
+                                   "padding: 6px;"
+                                   "}")
+        # Create custom button with icon
+        customButtonNo = QPushButton(QIcon(u":/icons/images/icons/x-circle.svg"), "")
+        customButtonNo.setStyleSheet("QPushButton {"
+                                   "width:150px;"
+                                   "height:50px;"
+                                   "background-color: #3f78bf;"
+                                   "color: white;"
+                                   "border-style: outset;"
+                                   "border-width: 2px;"
+                                   "border-radius: 10px;"
+                                   "border-color: #8f8f91;"
+                                   "font: bold 14px;"
+                                   "min-width: 10em;"
+                                   "padding: 6px;"
+                                   "}")
+        self.msgRestartBox.addButton(customButtonYes, QMessageBox.YesRole)
+        self.msgRestartBox.addButton(customButtonNo, QMessageBox.NoRole)
+        self.msgRestartBox.setText("Czy chcesz zrestartować aplikację?")
 
-        if retval == QMessageBox.Ok:
+        retval = self.msgRestartBox.exec_()
+
+        if retval == 0:
             QCoreApplication.quit()
             status = QProcess.startDetached(sys.executable, sys.argv)
             print(status)
+
+
+
 
 
 

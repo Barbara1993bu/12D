@@ -26,5 +26,6 @@
     <file>images/icons/arrow-down.svg</file>
     <file>images/icons/smile.svg</file>
     <file>images/icons/alert-circle.svg</file>
+    <file>images/icons/check-circle.svg</file>
   </qresource>
 </RCC>

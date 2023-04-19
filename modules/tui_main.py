@@ -948,3 +948,6 @@ class tui_MainWindow(object):
         self.btn_shutDownDevice.setText(QCoreApplication.translate("MainWindow", u"Shut Down", None))
 
         self.label.setText(QCoreApplication.translate("MainWindow", u"NEW PAGE TEST", None))
+
+        # self.msgRestartBox.setText("Czy chcesz zrestartować aplikację AAAAAAA ")
+
