@@ -951,3 +951,4 @@ class tui_MainWindow(object):
 
         # self.msgRestartBox.setText("Czy chcesz zrestartować aplikację AAAAAAA ")
 
+

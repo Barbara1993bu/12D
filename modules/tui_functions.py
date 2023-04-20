@@ -87,35 +87,20 @@ class Worker(QRunnable):
         finally:
             self.signals.finished.emit()  # Done
 
-
-def restart():
-
-    QCoreApplication.quit()
-    status = QProcess.startDetached(sys.executable, sys.argv)
-    print(status)
-
-
-def reboot():
-    os.system("shutdown -t 0 -r -f")
-
-
-def shut_down():
-    os.system('shutdown -s -t 0')
-
 #
 # def restart():
-#
-#     # dlg = QMessageBox()
-#     # dlg.setWindowTitle("I have a question!")
-#     # dlg.setText("This is a simple dialog")
-#     # button = dlg.exec()
-#     #
-#     # if button == QMessageBox.Ok:
-#     #     print("OK!")
 #
 #     QCoreApplication.quit()
 #     status = QProcess.startDetached(sys.executable, sys.argv)
 #     print(status)
+#
+#
+# def reboot():
+#     os.system("shutdown -t 0 -r -f")
+#
+#
+# def shut_down():
+#     os.system('shutdown -s -t 0')
 
 
 class TUIFunctions(MainWindow):
@@ -329,14 +314,14 @@ class TUIFunctions(MainWindow):
         # self.tui.maximizeRestoreAppBtn.clicked.connect(lambda: TUIFunctions.maximize_restore(self))
 
         # close application
-        self.tui.btn_closeApp.clicked.connect(lambda: self.close())
+        self.tui.btn_closeApp.clicked.connect(lambda: self._close())
 
         # restart application
         # self.tui.btn_restartApp.clicked.connect(restart)
         self.tui.btn_restartApp.clicked.connect(lambda: self._restart())
 
         # reboot device
-        # self.tui.btn_rebootDevice.clicked.connect(reboot)
+        self.tui.btn_rebootDevice.clicked.connect(lambda: self._reboot())
 
         # shut down device
-        # self.tui.btn_shutDownDevice.clicked.connect(shut_down)
+        self.tui.btn_shutDownDevice.clicked.connect(lambda: self._shut_down())

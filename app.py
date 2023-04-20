@@ -26,16 +26,114 @@ widgets = None
 os.environ["QT_IM_MODULE"] = "qtvirtualkeyboard"
 
 
+# -----------------------------------------
+# define custom QMessageWindow
+# -----------------------------------------
+
+class nxMessageWindow(QMessageBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+
+        # Set custom font and background color
+        font = QFont("Segoe UI Semibold", 18)
+        self.setFont(font)
+
+        self.setStyleSheet("QMessageBox {"
+                           "width:500 px;"
+                           "background-color: #3c7bcf;"
+                           "border-style: solid;"
+                           "border-width: 5px;"
+                           "border-radius: 0px;"
+                           "border-color: #93e1f9;"
+                           "}")
+
+        # Create a custom label with a different font and style
+        self.mbLabel = QLabel("?")
+        self.mbLabel.setFont(QFont("Segoe UI Semibold", 20))
+        self.mbLabel.setStyleSheet("QLabel{"
+                                   "min-width:400 px;"
+                                   "min-height:0 px;"
+                                   "font-size: 18px;"
+                                   "background-color: #3c7bcf;"
+                                   "}")
+
+        # Create custom button with icon
+        customButtonYes = QPushButton(
+            QIcon(u":/icons/images/icons/check-circle.svg"), "")
+        customButtonYes.setStyleSheet("QPushButton {"
+                                      "width:150px;"
+                                      "height:50px;"
+                                      "background-color: #3c7bcf;"
+                                      "color: white;"
+                                      "border-style: outset;"
+                                      "border-width: 5px;"
+                                      "border-radius: 15px;"
+                                      "border-color: #93e1f9;"
+                                      "font: bold 14px;"
+                                      "min-width: 10em;"
+                                      "padding: 6px;"
+                                      "}")
+        customButtonYes.setIconSize(QSize(50, 50))
+
+        # Create custom button with icon
+        customButtonNo = QPushButton(
+            QIcon(u":/icons/images/icons/x-circle.svg"), "")
+        customButtonNo.setStyleSheet("QPushButton {"
+                                     "width:150px;"
+                                     "height:50px;"
+                                     "background-color: #3c7bcf;"
+                                     "color: white;"
+                                     "border-style: outset;"
+                                     "border-width: 5px;"
+                                     "border-radius: 15px;"
+                                     "border-color: #93e1f9;"
+                                     "font: bold 14px;"
+                                     "min-width: 10em;"
+                                     "padding: 6px;"
+                                     "}")
+        customButtonNo.setIconSize(QSize(50, 50))
+
+        self.addButton(customButtonYes, QMessageBox.YesRole)
+        self.addButton(customButtonNo, QMessageBox.NoRole)
+
+        # Custom alignment
+        grid_layout = self.layout()
+
+        qt_msgboxex_icon_label = self.findChild(QLabel, "qt_msgboxex_icon_label")
+        qt_msgboxex_icon_label.deleteLater()
+
+        qt_msgbox_label = self.findChild(QLabel, "qt_msgbox_label")
+        qt_msgbox_label.setAlignment(Qt.AlignCenter)
+        grid_layout.removeWidget(qt_msgbox_label)
+
+        qt_msgbox_buttonbox = self.findChild(QDialogButtonBox, "qt_msgbox_buttonbox")
+        grid_layout.removeWidget(qt_msgbox_buttonbox)
+
+        grid_layout.addWidget(qt_msgbox_label, 0, 0, alignment=Qt.AlignCenter)
+        grid_layout.addWidget(qt_msgbox_buttonbox, 1, 0, alignment=Qt.AlignCenter)
+
+    def retranslateMessageBox(self):
+        self.setText(QCoreApplication.translate("nxMessageWindow", u"?", None))
+
+
+# -----------------------------------------
 # main TUI Window
+# -----------------------------------------
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # make app full-screen
-        self.setWindowState(self.windowState() | Qt.WindowFullScreen)
-        # self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowType_Mask)
-        # self.setWindowFlags(Qt.CustomizeWindowHint | Qt.FramelessWindowHint)
-        # self.setGeometry(0, 0, 800, 600)
+        # # make app full-screen
+        # self.setWindowState(self.windowState() | Qt.WindowFullScreen)
+        # # self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowType_Mask)
+        # # self.setWindowFlags(Qt.CustomizeWindowHint | Qt.FramelessWindowHint)
+
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        # self.setWindowFlag(Qt.WindowStaysOnBottomHint)
+        self.setWindowState(Qt.WindowMaximized)
 
         # load main window frame and apply setup
         self.tui = tui_MainWindow()
@@ -43,8 +141,9 @@ class MainWindow(QMainWindow):
 
         # create pool for new threads
         self.threadpool = QThreadPool()
-        print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
-
+        print(
+            "Multithreading with maximum %d threads" %
+            self.threadpool.maxThreadCount())
 
         # declare all app widgets
         global widgets
@@ -170,8 +269,8 @@ class MainWindow(QMainWindow):
         # print btn name
         # print(f'Button "{btnName}" pressed!')
 
-
     # mouse click event
+
     def mousePressEvent(self, event):
 
         # drag position event
@@ -195,71 +294,19 @@ class MainWindow(QMainWindow):
         except BaseException:
             raise Exception("Sorry, virtual keyboard can not be found!")
 
-    # def _restart(self):
-    #
-    #     self.msg = QMessageBox()
-    #     self.msg.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
-    #     self.msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-    #     # self.msg.setIconPixmap(QPixmap(u":/icons/images/icons/alert-circle.svg"))
-    #     self.msg.setStyleSheet("QLabel{max-width:350 px; min-height:0 px; font-size: 32px; background-color: #3c7bcf;} QPushButton{ width:150px; height:50px; font-size: 28px; background-color: #3c7bcf; }")
-    #
-    #     # Show the message box
-    #     retval = self.msg.exec_()
-    #
-    #     if retval == QMessageBox.Ok:
-    #         QCoreApplication.quit()
-    #         status = QProcess.startDetached(sys.executable, sys.argv)
-    #         print(status)
+    def _close(self):
 
+        self.msgCloseBox = nxMessageWindow()
+        self.msgCloseBox.setText("Do you want to close the application?")
+        retval = self.msgCloseBox.exec_()
 
-
+        if retval == 0:
+            QCoreApplication.quit()
 
     def _restart(self):
 
-        self.msgRestartBox = QMessageBox()
-        self.msgRestartBox.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
-        # msgBox.setWindowTitle("Custom Button with Icon")
-        self.msgRestartBox.setStyleSheet("QLabel{"
-                       "max-width:350 px;"
-                       " min-height:0 px;"
-                       " font-size: 18px;"
-                       " background-color: #3c7bcf;"
-                       "}")
-
-        # Create custom button with icon
-        customButtonYes = QPushButton(QIcon(u":/icons/images/icons/check-circle.svg"), "")
-        customButtonYes.setStyleSheet("QPushButton {"
-                                   "width:150px;"
-                                   "height:50px;"
-                                   "background-color: #3f78bf;"
-                                   "color: white;"
-                                   "border-style: outset;"
-                                   "border-width: 2px;"
-                                   "border-radius: 10px;"
-                                   "border-color: #8f8f91;"
-                                   "font: bold 14px;"
-                                   "min-width: 10em;"
-                                   "padding: 6px;"
-                                   "}")
-        # Create custom button with icon
-        customButtonNo = QPushButton(QIcon(u":/icons/images/icons/x-circle.svg"), "")
-        customButtonNo.setStyleSheet("QPushButton {"
-                                   "width:150px;"
-                                   "height:50px;"
-                                   "background-color: #3f78bf;"
-                                   "color: white;"
-                                   "border-style: outset;"
-                                   "border-width: 2px;"
-                                   "border-radius: 10px;"
-                                   "border-color: #8f8f91;"
-                                   "font: bold 14px;"
-                                   "min-width: 10em;"
-                                   "padding: 6px;"
-                                   "}")
-        self.msgRestartBox.addButton(customButtonYes, QMessageBox.YesRole)
-        self.msgRestartBox.addButton(customButtonNo, QMessageBox.NoRole)
-        self.msgRestartBox.setText("Czy chcesz zrestartować aplikację?")
-
+        self.msgRestartBox = nxMessageWindow()
+        self.msgRestartBox.setText("Do you want to restart the application?")
         retval = self.msgRestartBox.exec_()
 
         if retval == 0:
@@ -267,12 +314,25 @@ class MainWindow(QMainWindow):
             status = QProcess.startDetached(sys.executable, sys.argv)
             print(status)
 
+    def _reboot(self):
 
+        self.msgRebootBox = nxMessageWindow()
+        self.msgRebootBox.setText("Do you want to reboot the device?")
+        retval = self.msgRebootBox.exec_()
 
+        if retval == 0:
+            # os.system("shutdown -t 0 -r -f")
+            print('ok')
 
+    def _shut_down(self):
 
+        self.msgShutDownBox = nxMessageWindow()
+        self.msgShutDownBox.setText("Do you want to turn off the device?")
+        retval = self.msgShutDownBox.exec_()
 
-
+        if retval == 0:
+            # os.system('shutdown -s -t 0')
+            print('ok')
 
 
 if __name__ == "__main__":
