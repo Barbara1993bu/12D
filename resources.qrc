@@ -5,6 +5,8 @@
   <qresource prefix="images">
     <file>images/images/NX_logo.png</file>
     <file>images/images/NX_logo_small.png</file>
+    <file>images/images/englishflag.svg</file>
+    <file>images/images/polishflag.svg</file>
   </qresource>
   <qresource prefix="icons">
     <file>images/icons/menu.svg</file>

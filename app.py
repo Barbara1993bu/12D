@@ -101,18 +101,21 @@ class nxMessageWindow(QMessageBox):
         # Custom alignment
         grid_layout = self.layout()
 
-        qt_msgboxex_icon_label = self.findChild(QLabel, "qt_msgboxex_icon_label")
+        qt_msgboxex_icon_label = self.findChild(
+            QLabel, "qt_msgboxex_icon_label")
         qt_msgboxex_icon_label.deleteLater()
 
         qt_msgbox_label = self.findChild(QLabel, "qt_msgbox_label")
         qt_msgbox_label.setAlignment(Qt.AlignCenter)
         grid_layout.removeWidget(qt_msgbox_label)
 
-        qt_msgbox_buttonbox = self.findChild(QDialogButtonBox, "qt_msgbox_buttonbox")
+        qt_msgbox_buttonbox = self.findChild(
+            QDialogButtonBox, "qt_msgbox_buttonbox")
         grid_layout.removeWidget(qt_msgbox_buttonbox)
 
         grid_layout.addWidget(qt_msgbox_label, 0, 0, alignment=Qt.AlignCenter)
-        grid_layout.addWidget(qt_msgbox_buttonbox, 1, 0, alignment=Qt.AlignCenter)
+        grid_layout.addWidget(qt_msgbox_buttonbox, 1, 0,
+                              alignment=Qt.AlignCenter)
 
     def retranslateMessageBox(self):
         self.setText(QCoreApplication.translate("nxMessageWindow", u"?", None))
@@ -297,7 +300,9 @@ class MainWindow(QMainWindow):
     def _close(self):
 
         self.msgCloseBox = nxMessageWindow()
-        self.msgCloseBox.setText("Do you want to close the application?")
+        self.msgCloseBox.setText(
+            Dictionaries._AppLang['Do you want to close the application?'][Dictionaries._AppVars['Language']])
+
         retval = self.msgCloseBox.exec_()
 
         if retval == 0:
@@ -306,7 +311,9 @@ class MainWindow(QMainWindow):
     def _restart(self):
 
         self.msgRestartBox = nxMessageWindow()
-        self.msgRestartBox.setText("Do you want to restart the application?")
+        self.msgRestartBox.setText(
+            Dictionaries._AppLang['Do you want to restart the application?'][Dictionaries._AppVars['Language']])
+
         retval = self.msgRestartBox.exec_()
 
         if retval == 0:
@@ -317,7 +324,9 @@ class MainWindow(QMainWindow):
     def _reboot(self):
 
         self.msgRebootBox = nxMessageWindow()
-        self.msgRebootBox.setText("Do you want to reboot the device?")
+        self.msgRebootBox.setText(
+            Dictionaries._AppLang['Do you want to reboot the device?'][Dictionaries._AppVars['Language']])
+
         retval = self.msgRebootBox.exec_()
 
         if retval == 0:
@@ -327,7 +336,14 @@ class MainWindow(QMainWindow):
     def _shut_down(self):
 
         self.msgShutDownBox = nxMessageWindow()
-        self.msgShutDownBox.setText("Do you want to turn off the device?")
+        self.msgShutDownBox.setText(
+            Dictionaries._AppLang['Do you want to turn off the device?'][Dictionaries._AppVars['Language']])
+
+        #test
+
+        # Dictionaries._AppVars['Language'] = 1
+        # self.tui.retranslate_tui(self)
+
         retval = self.msgShutDownBox.exec_()
 
         if retval == 0:

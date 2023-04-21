@@ -11,6 +11,9 @@ from PyQt5.QtQuickWidgets import QQuickWidget
 
 from resources import *
 
+# import modules and widgets
+from modules import *
+
 os.environ["QT_IM_MODULE"] = "qtvirtualkeyboard"
 
 
@@ -663,6 +666,23 @@ class tui_MainWindow(object):
         # attach label widget to new page layout
         self.vertLayoutNewPage.addWidget(QLabel("Settings"))
 
+        # button for english
+        self.btnLangEnglish = QPushButton()#QIcon(u":/images/images/polishflag.svg"),"")
+        self.btnLangEnglish.setObjectName(u"btnLangEnglish")
+        self.btnLangEnglish.setSizePolicy(sizePolicy)
+        self.btnLangEnglish.setMinimumSize(QSize(125, 50))
+        self.btnLangEnglish.setMaximumSize(QSize(200, 100))
+        self.btnLangEnglish.setFont(font)
+        self.btnLangEnglish.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btnLangEnglish.setLayoutDirection(Qt.LeftToRight)
+        self.btnLangEnglish.setStyleSheet(u"background-image: url(:/images/images/polishflag.svg);")
+
+        self.vertLayoutNewPage.addWidget(self.btnLangEnglish)
+
+        self.btnLangPolish = QPushButton(self.setting_page)
+
+        self.vertLayoutNewPage.addWidget(self.btnLangPolish)
+
         # attach new page to stacked widgets
         self.stackedWidget.addWidget(self.setting_page)
 
@@ -768,6 +788,13 @@ class tui_MainWindow(object):
         self.btn_shutDownDevice.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_shutDownDevice.setLayoutDirection(Qt.LeftToRight)
         self.btn_shutDownDevice.setStyleSheet(u"background-image: url(:/icons/images/icons/power.svg);")
+        # self.btn_shutDownDevice.setIcon(QIcon(u":/icons/images/icons/power.svg"))
+        # self.btn_shutDownDevice.setIconSize(QSize(50,50))
+        # self.btn_shutDownDevice.setStyleSheet("text-align: left;")
+
+        # self.btn_shutDownDevice.setStyleSheet("QPushButton { padding-left: 20px; text-align: left; }")
+        # self.btn_shutDownDevice.setStyleSheet("align: left; icon-size: 32px;")
+
         # attach button shutdown device
         self.vertLayoutTopMenu.addWidget(self.btn_shutDownDevice)
 
@@ -926,28 +953,50 @@ class tui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
 
         self.appTitle.setText(QCoreApplication.translate("MainWindow", u"UST 4.0", None))
-        self.appTitleDescription.setText(QCoreApplication.translate("MainWindow", u"Ultrasound Tomography Device", None))
 
-        self.toggleButton.setText(QCoreApplication.translate("MainWindow", u"Hide", None))
+        self.appTitleDescription.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Ultrasound Tomography Device'][Dictionaries._AppVars['Language']], None))
 
-        self.btn_home.setText(QCoreApplication.translate("MainWindow", u"Home", None))
-        self.btn_widgets.setText(QCoreApplication.translate("MainWindow", u"Widgets", None))
-        self.btn_new.setText(QCoreApplication.translate("MainWindow", u"New", None))
+        self.toggleButton.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Hide'][Dictionaries._AppVars['Language']], None))
+
+        self.btn_home.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Home'][Dictionaries._AppVars['Language']], None))
+
+        self.btn_widgets.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Widgets'][Dictionaries._AppVars['Language']], None))
+
+        self.btn_new.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['New Example Tab'][Dictionaries._AppVars['Language']], None))
+
+
         # self.btn_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
         # self.btn_exit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
-        self.btn_settings.setText(QCoreApplication.translate("MainWindow", u"Settings", None))
+        self.btn_settings.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Settings'][Dictionaries._AppVars['Language']], None))
+
+        self.moreSettingsBtn.setToolTip(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['More Options'][Dictionaries._AppVars['Language']], None))
 
 
-        self.moreSettingsBtn.setToolTip(QCoreApplication.translate("MainWindow", u"More Options", None))
         self.moreSettingsBtn.setText("")
 
+        self.btn_closeApp.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Close Application'][Dictionaries._AppVars['Language']], None))
 
-        self.btn_closeApp.setText(QCoreApplication.translate("MainWindow", u"Close Application", None))
-        self.btn_restartApp.setText(QCoreApplication.translate("MainWindow", u"Restart Application", None))
-        self.btn_rebootDevice.setText(QCoreApplication.translate("MainWindow", u"Reboot Device", None))
-        self.btn_shutDownDevice.setText(QCoreApplication.translate("MainWindow", u"Shut Down", None))
+        self.btn_restartApp.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Restart Application'][Dictionaries._AppVars['Language']], None))
 
-        self.label.setText(QCoreApplication.translate("MainWindow", u"NEW PAGE TEST", None))
+        self.btn_rebootDevice.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Reboot Device'][Dictionaries._AppVars['Language']], None))
+
+        self.btn_shutDownDevice.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Shut Down'][Dictionaries._AppVars['Language']], None))
+
+
+        self.label.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['TEST'][Dictionaries._AppVars['Language']], None))
+
 
         # self.msgRestartBox.setText("Czy chcesz zrestartować aplikację AAAAAAA ")
 
