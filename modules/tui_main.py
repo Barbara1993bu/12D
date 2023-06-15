@@ -1,20 +1,32 @@
 # -*- coding: utf-8 -*-
-
+from datetime import datetime
 import os
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtQml import *
-from PyQt5.QtQuickWidgets import QQuickWidget
+# from PySide2.QtCore import *
+import PySide2
+from PySide2.QtWebEngineWidgets import QWebEngineView
+from plotly.offline import plot
+# from plotly.graph_objs import Scatter
+
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtQml import *
+from PySide2.QtQuickWidgets import QQuickWidget
+import pyqtgraph as pg
+import numpy as np
 # from . animated_toggle import AnimatedToggle
 
 from resources import *
 
 # import modules and widgets
-from modules import *
 
-os.environ["QT_IM_MODULE"] = "qtvirtualkeyboard"
+
+
+from modules import *
+# from . usefull_function import build_axes
+import copy
+
+# os.environ["QT_IM_MODULE"] = "qtvirtualkeyboard"
 
 
 # -----------------------------------------
@@ -22,10 +34,11 @@ os.environ["QT_IM_MODULE"] = "qtvirtualkeyboard"
 # they are required for use of virtual keyboard
 # -----------------------------------------
 
+
 class nxQLineEdit(QLineEdit):
 
-    focused = pyqtSignal()
-    noneFocused = pyqtSignal()
+    focused = Signal()
+    noneFocused = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -37,11 +50,12 @@ class nxQLineEdit(QLineEdit):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.noneFocused.emit()
+
 
 class nxQDateEdit(QDateEdit):
 
-    focused = pyqtSignal()
-    noneFocused = pyqtSignal()
+    focused = Signal()
+    noneFocused = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -53,11 +67,12 @@ class nxQDateEdit(QDateEdit):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.noneFocused.emit()
+
 
 class nxQDateTimeEdit(QDateTimeEdit):
 
-    focused = pyqtSignal()
-    noneFocused = pyqtSignal()
+    focused = Signal()
+    noneFocused = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -69,11 +84,12 @@ class nxQDateTimeEdit(QDateTimeEdit):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.noneFocused.emit()
+
 
 class nxQDoubleSpinBox(QDoubleSpinBox):
 
-    focused = pyqtSignal()
-    noneFocused = pyqtSignal()
+    focused = Signal()
+    noneFocused = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -85,11 +101,12 @@ class nxQDoubleSpinBox(QDoubleSpinBox):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.noneFocused.emit()
+
 
 class nxQDoubleSpinBox(QDoubleSpinBox):
 
-    focused = pyqtSignal()
-    noneFocused = pyqtSignal()
+    focused = Signal()
+    noneFocused = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -101,11 +118,12 @@ class nxQDoubleSpinBox(QDoubleSpinBox):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.noneFocused.emit()
+
 
 class nxQTimeEdit(QTimeEdit):
 
-    focused = pyqtSignal()
-    noneFocused = pyqtSignal()
+    focused = Signal()
+    noneFocused = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -117,10 +135,85 @@ class nxQTimeEdit(QTimeEdit):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.noneFocused.emit()
+
+# ------------------------------------------
+# ------------- Worker ---------------------
+# ------------------------------------------
+
+
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+
+    Supported signals are:
+
+    finished
+        No data
+
+    error
+        tuple (exctype, value, traceback.format_exc() )
+
+    result
+        object data returned from processing, anything
+
+    progress
+        int indicating % progress
+
+    '''
+    finished = Signal()
+    error = Signal(tuple)
+    result = Signal(object)
+    progress = Signal(int)
+
+
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and
+                     kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        self.kwargs['progress_callback'] = self.signals.progress
+
+    @Slot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
 
 # -----------------------------------------
 # definition of main window
 # -----------------------------------------
+
 
 class tui_MainWindow(object):
 
@@ -155,7 +248,7 @@ class tui_MainWindow(object):
         self.appMargins = QVBoxLayout(self.styleSheet)
         self.appMargins.setSpacing(0)
         self.appMargins.setObjectName(u"appMargins")
-        self.appMargins.setContentsMargins(10, 10, 10, 10)
+        self.appMargins.setContentsMargins(0, 0, 0, 0)
 
         # application background
         self.bgApp = QFrame(self.styleSheet)
@@ -249,7 +342,7 @@ class tui_MainWindow(object):
         self.headerHorizLayout = QHBoxLayout(self.headerTopBg)
         self.headerHorizLayout.setSpacing(0)
         self.headerHorizLayout.setObjectName(u"headerHorizLayout")
-        self.headerHorizLayout.setContentsMargins(0, 0, 10, 0)
+        self.headerHorizLayout.setContentsMargins(0, 0, 0, 0)
 
         # application logo page
         self.headerLogoPage = QFrame(self.leftMenuBg)
@@ -308,7 +401,7 @@ class tui_MainWindow(object):
         self.headerHorizLayoutBtns = QHBoxLayout(self.headerRightButtons)
         self.headerHorizLayoutBtns.setSpacing(5)
         self.headerHorizLayoutBtns.setObjectName(u"headerHorizLayoutBtns")
-        self.headerHorizLayoutBtns.setContentsMargins(0, 0, 25, 0)
+        self.headerHorizLayoutBtns.setContentsMargins(0, 0, 0, 0)
 
         # add more options button
         self.moreSettingsBtn = QPushButton(self.headerRightButtons)
@@ -434,6 +527,8 @@ class tui_MainWindow(object):
         self.btn_widgets.setLayoutDirection(Qt.LeftToRight)
         self.btn_widgets.setStyleSheet(u"background-image: url(:/icons/images/icons/play.svg);")
 
+        # self.btn_widgets.mouseMoveEvent = self.btn_widgetsMouseMoveEvent
+
         # attach widgets button
         self.vertLayoutTopMenu.addWidget(self.btn_widgets)
 
@@ -448,8 +543,21 @@ class tui_MainWindow(object):
         self.btn_new.setLayoutDirection(Qt.LeftToRight)
         self.btn_new.setStyleSheet(u"background-image: url(:/icons/images/icons/archive.svg);")
 
+        # self.btn_new.mouseMoveEvent = self.btn_newMouseMoveEvent
+
         # attach new page button
         self.vertLayoutTopMenu.addWidget(self.btn_new)
+
+
+
+        # attach new page button
+        # self.vertLayoutTopMenu.addWidget(self.btn_grid)
+
+
+
+        # attach new page button
+        # self.vertLayoutTopMenu.addWidget(self.btn_meas)
+
         #
         # # top menu save button
         # self.btn_save = QPushButton(self.topMenu)
@@ -573,7 +681,7 @@ class tui_MainWindow(object):
         self.vertLayoutContainer = QVBoxLayout(self.pagesContainer)
         self.vertLayoutContainer.setSpacing(0)
         self.vertLayoutContainer.setObjectName(u"vertLayoutContainer")
-        self.vertLayoutContainer.setContentsMargins(10, 10, 10, 10)
+        self.vertLayoutContainer.setContentsMargins(0, 0, 0, 0)
 
         # stacked widgets
         self.stackedWidget = QStackedWidget(self.pagesContainer)
@@ -630,24 +738,19 @@ class tui_MainWindow(object):
 
         # -----------------------------------------
         # New Page Frame
-        self.new_page = QWidget()
-        self.new_page.setObjectName(u"new_page")
-
-        self.vertLayoutNewPage = QVBoxLayout(self.new_page)
-        self.vertLayoutNewPage.setObjectName(u"vertLayoutNewPage")
-
-        self.label = QLabel(self.new_page)
-        self.label.setObjectName(u"label")
-        self.label.setAlignment(Qt.AlignCenter)
-
-        # attach label widget to new page layout
-        self.vertLayoutNewPage.addWidget(self.label)
-
-        self.inputText = QLineEdit()
-        self.vertLayoutNewPage.addWidget(self.inputText)
+        self.new_page = new_page()
 
         # attach new page to stacked widgets
         self.stackedWidget.addWidget(self.new_page)
+
+        # ------------------------------------------
+        self.grid_page = grid_page()
+        self.stackedWidget.addWidget(self.grid_page)
+
+        # ------------------------------------------
+        self.meas_page = meas_page()
+        self.stackedWidget.addWidget(self.meas_page)
+
 
 
         # -----------------------------------------
@@ -864,24 +967,24 @@ class tui_MainWindow(object):
 
         # virtual keyboard frame
         self.keyboardBox = QFrame(self.keyboardBg)
-        # self.keyboardBox.setStyleSheet(u"background-color: rgb (230, 230, 230);")
+        self.keyboardBox.setStyleSheet(u"background-color: rgb (230, 230, 230);")
         self.keyboardBox.setObjectName(u"keyboardBox")
         self.keyboardBox.setMinimumSize(QSize(0, 0))
         self.keyboardBox.setMaximumSize(QSize(10000, 0))
         self.keyboardBox.setFrameShape(QFrame.NoFrame)
         self.keyboardBox.setFrameShadow(QFrame.Raised)
-
+        #
         self.keyboardBoxLayout = QVBoxLayout(self.keyboardBox)
 
         self.keyboardwidget = QQuickWidget(self.keyboardBox)
-        self.keyboardwidget.setMinimumSize(QSize(845,320))
-        self.keyboardwidget.setMaximumSize(QSize(845,320))
+        self.keyboardwidget.setMinimumSize(QSize(845, 320))
+        self.keyboardwidget.setMaximumSize(QSize(845, 320))
         self.keyboardwidget.setSource(QUrl.fromLocalFile("src/keyboard.qml"))
+
         self.keyboardwidget.setResizeMode(QQuickWidget.SizeRootObjectToView)
         self.keyboardwidget.setAttribute(Qt.WA_AcceptTouchEvents)
         self.keyboardwidget.setFocusPolicy(Qt.NoFocus)
-        self.keyboardwidget.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        self.keyboardwidget.setAttribute(QtCore.Qt.WA_TranslucentBackground,True)
+
 
         self.keyboardBoxLayout.addWidget(self.keyboardwidget, 0, Qt.AlignCenter)
 
@@ -948,14 +1051,16 @@ class tui_MainWindow(object):
 
     # -----------------------------------------
 
+
+
     def retranslate_tui(self, MainWindow):
 
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
 
-        self.appTitle.setText(QCoreApplication.translate("MainWindow", u"UST 4.0", None))
+        self.appTitle.setText(QCoreApplication.translate("MainWindow", u"EIT 3.0", None))
 
         self.appTitleDescription.setText(QCoreApplication.translate("MainWindow",
-            Dictionaries._AppLang['Ultrasound Tomography Device'][Dictionaries._AppVars['Language']], None))
+            Dictionaries._AppLang['Electrical Impedance Tomography Device'][Dictionaries._AppVars['Language']], None))
 
         self.toggleButton.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Hide'][Dictionaries._AppVars['Language']], None))
@@ -967,7 +1072,14 @@ class tui_MainWindow(object):
             Dictionaries._AppLang['Widgets'][Dictionaries._AppVars['Language']], None))
 
         self.btn_new.setText(QCoreApplication.translate("MainWindow",
-            Dictionaries._AppLang['New Example Tab'][Dictionaries._AppVars['Language']], None))
+            Dictionaries._AppLang['EIT 3D'][Dictionaries._AppVars['Language']], None))
+        self.new_page.btn_grid.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Visualisation'][Dictionaries._AppVars['Language']], None))
+        self.new_page.btn_meas.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Measurment'][Dictionaries._AppVars['Language']], None))
+        # self.leftMenuBg.btn_new2.setText(QCoreApplication.translate("MainWindow",
+        #                                                 Dictionaries._AppLang['New Example Tab'][
+        #                                                     Dictionaries._AppVars['Language']], None))
 
 
         # self.btn_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
@@ -994,10 +1106,473 @@ class tui_MainWindow(object):
             Dictionaries._AppLang['Shut Down'][Dictionaries._AppVars['Language']], None))
 
 
-        self.label.setText(QCoreApplication.translate("MainWindow",
-            Dictionaries._AppLang['TEST'][Dictionaries._AppVars['Language']], None))
+        self.new_page.meas_page.Label_colorMap.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Color map'][Dictionaries._AppVars['Language']], None))
+        self.new_page.meas_page.Set_of_colorMap.addItems(['default', 'Greys', 'viridis', 'hsv', 'cool', 'hot'])
+
+        self.new_page.reconstruction_page.btn_Model.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Model EIT'][Dictionaries._AppVars['Language']], None))
+        self.new_page.reconstruction_page.btn_voltages_EIT.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Voltages EIT'][Dictionaries._AppVars['Language']], None))
+
+        self.new_page.reconstruction_page.label_txt_method_reconstruction.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Method of reconstruction'][Dictionaries._AppVars['Language']], None))
+
+        self.new_page.reconstruction_page.Method_of_reconstruction.addItems(['Tikhonov', 'Gausse-Newton', 'Kotre',
+                                                'Marquardt-Levenberg', 'Total Variation'])
+        self.new_page.reconstruction_page.btn_reconstruction.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Reconstruction EIT'][Dictionaries._AppVars['Language']], None))
+        self.new_page.reconstruction_page.label_txt_number_of_iteration.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Number of iteration'][Dictionaries._AppVars['Language']], None))
+        self.new_page.reconstruction_page.qdial_number_of_iteration.setMinimum(1)
+        self.new_page.reconstruction_page.qdial_number_of_iteration.setMaximum(10)
+        # self.qdial_number_of_iteration.setTickInterval(1)
+        self.new_page.reconstruction_page.label_txt_regularyzation_parameter.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Regularyzation Parameter'][Dictionaries._AppVars['Language']], None))
+        self.new_page.reconstruction_page.QcomboBox_regularyzation_parameter.addItems(['1e-1', '1e-2', '1e-3', '1e-4', '1e-5','1e-6','1e-7'])
+        self.new_page.reconstruction_page.Label_load_Voltages.setText(r'D:\Aplikacje_pyQt\raw25072021190113389.csv')
+        self.new_page.reconstruction_page.Label_load_model.setText(r'D:\Aplikacje_pyQt\wall_3D_G_2021_v1.mat')
+        self.new_page.btn_meas.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Measurment'][Dictionaries._AppVars['Language']], None))
+        self.new_page.btn_recontruction_frame.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Reconstruction'][Dictionaries._AppVars['Language']], None))
+        AA = read_csv(r'D:\Aplikacje_pyQt\raw25072021190113389.csv', sep=';', header=None).to_numpy()
+        self.new_page.meas_page.model._data = AA[:, 3:-1].tolist()
+        # Ustawienie delegata do kolorowania komórek
+        color_palette = build_color_palette(AA[:, 3:-1])
+        delegate = ColorDelegate(color_palette)
+        self.new_page.meas_page.table.setItemDelegate(delegate)
+
+        self.new_page.grid_page.x_text.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Slice plane x = '][Dictionaries._AppVars['Language']], None))
+        self.new_page.grid_page.y_text.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Slice plane y = '][Dictionaries._AppVars['Language']], None))
+        self.new_page.grid_page.z_text.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Slice plane z = '][Dictionaries._AppVars['Language']], None))
+        self.new_page.grid_page.vis_text.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Visualization voltages'][Dictionaries._AppVars['Language']], None))
+        self.new_page.grid_page.btn_saveVis.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Save Visualization'][Dictionaries._AppVars['Language']], None))
+        self.new_page.grid_page.btn_saveVis.setEnabled(False)
+        # I = pg.ImageItem()
+        # Maska = pg.ImageItem()
+        # stimulation = {
+        #     'n_electrodes': 8,
+        #     'd_stim': 4,
+        #     'd_meas': 1,
+        #     'amp': 0.003,
+        #     'z_contact': 0.01 * np.ones(8),
+        #     'part_of_matrix': np.r_[1:8]
+        #
+        # }
+        # Model = ImageEIT(50, np.array([0, 2*np.pi, 8]), 'point', stimulation=stimulation)
+        # Model.setup()
+        #
+        # n_value = np.ones(Model.elems.shape[0])
+        # n_value[10:100] = 2
+        # Model.up_grade_value_elems(n_value)
+        #
+        # I.setImage(Model.field_of_view)
+        # Maska.setImage(~Model.field_of_view.mask)
+        # I.setRect(0, 0, 500, 500)
+        # Maska.setRect(0, 0, 500, 500)
+        # # self.inputGraph.adjustSize()
+        #
+        # cm = pg.colormap.get('CET-L17')
+        # I.setColorMap(cm)
+        # # Maskowanie
+        # ver_b = Model.vertices_boundary
+        # Points = [QPoint(ver_b[0][x], ver_b[1][x]) for x in range(len(ver_b[0]))]
+        # Polygon = QPolygon(Points)
+        # Region = QRegion(Polygon)
+        #
+        # self.inputGraph.addItem(Maska)
+        # Maska.setZValue(10)
+        # Maska.setOpacity(0.5)
+        # self.inputGraph.addItem(I)
+        # self.inputGraph.setBackground('w')
+        # self.inputGraph.scaleToImage(I)
 
 
         # self.msgRestartBox.setText("Czy chcesz zrestartować aplikację AAAAAAA ")
+
+
+    # def btn_widgetsMouseMoveEvent(self, event):
+    #     print('jestem na zakladce widgets')
+    #     self.keyboardwidget.setSource(QUrl.fromLocalFile("src/keyboard.qml"))
+    #
+    #
+    # def btn_newMouseMoveEvent(self, event):
+    #     print('jestem na zakladce new_page')
+    #     self.keyboardwidget.setSource(QUrl.fromLocalFile("src/empty.qml"))
+
+
+    def solve_inverse_problem(self, progress_callback):
+        """
+        Funkcja rozwiązuje problem odwrotny w elektrycznej tomografii impedancyjnej.
+        W przypadku przekazania nowej ramki danych wyniki są zapisywane do pliku 'reconstruction.npz' w katalogu z bieżącym skryptem.
+
+        Parametry wejściowe:
+        finite_element_mesh: ścieżka do pliku MAT z siatką zbudowaną z czworościanów, siatka musi posiadać elektrody powierzchniowe
+        data_frame: ścieżka do pliku CSV z ramką danych EIT
+        alpha: parametr regularyzacyjny - dodatnia liczba rzeczywista
+        max_iterations: maksymalna liczna iteracji w metodzie Gaussa-Newtona
+
+        Parametr wyjściowy:
+        eit_3D - obiekt klasy Image_EIT_3D_tetra - zawiera model oraz rozwiązanie zagadnienia odwrotnego """
+        # time.sleep(2)
+        finite_element_mesh = self.new_page.reconstruction_page.Label_load_model.text()
+        data_frame = self.new_page.reconstruction_page.Label_load_Voltages.text()
+        max_iterations = int(self.new_page.reconstruction_page.qdial_number_of_iteration.value())
+        alpha = float(self.new_page.reconstruction_page.QcomboBox_regularyzation_parameter.currentText())
+        method = self.new_page.reconstruction_page.Method_of_reconstruction.currentText()
+        progress_callback.emit('Loading Model')
+
+        mesh = load_mesh_from_mat_file_v2(finite_element_mesh)
+
+        progress_callback.emit('Loading data frame')
+
+        HT_data = load_data_from_HT2(data_frame)
+
+        data_frame_full = {'stimulation': HT_data['stimulation'], 'voltages': HT_data['voltages']}
+
+        DFs = separate_EIT_data_frame(data_frame_full)
+
+        if ('message' in DFs):
+            data_frame = data_frame_full
+
+        else:
+            data_frame = {'stimulation': DFs['stimulation'], 'voltages': DFs['voltages_P']}
+
+        stimulation = data_frame['stimulation']
+
+        stimulation['z_contact'] = mesh['z_contact']
+
+        eit_3D = Image_EIT_3D_tetra(mesh, stimulation=stimulation, shape_ele='surface')
+        progress_callback.emit('Defined preliminary variables')
+        eit_3D.set_up()
+
+        eit_3D.up_grade_value_elems(np.ones_like(eit_3D.value_elems))
+
+        U_ref = eit_3D.simulation()
+
+        voltage_factor = np.linalg.norm(data_frame['voltages']) / np.linalg.norm(U_ref)
+
+        U = (1.0 / voltage_factor) * data_frame['voltages']
+
+
+        if (type(alpha).__name__ != 'float'): raise TypeError("Parameter 'alpha' is not valid.")
+
+        if (alpha <= 0): raise ValueError("Parameter 'alpha' is not valid.")
+
+
+        eit_3D.profiler['reconstruction_gn'] = True
+
+        max_iterations = int(max_iterations)
+
+        if (max_iterations < 1): raise ValueError("Parameter 'max_iterations' is not valid.")
+
+        progress_callback.emit('Calculate reconstruction')
+
+        # ['Tikhonov', 'Damp_Newton', 'Kotre',
+        #  'Marquardt-Levenberg', 'Total Variation']
+        if method == 'Damp_Newton' or method == 'Total Variation':
+
+            R = matrix_laplacea(eit_3D.elems, eit_3D.nodes, 'tetra')
+
+            RtR = (R.T @ R).toarray()
+
+            RtR = RtR.astype(np.float_)
+
+            eit_3D.change_ms_inv(lamb=alpha, RtR=RtR)
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+        if method == 'Tikhonov':
+            eit_3D.change_ms_inv(lamb=alpha, method='dgn')
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+        if method == 'Marquardt-Levenberg':
+            eit_3D.change_ms_inv(lamb=alpha, method='lm')
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+
+        if method == 'Kotre':
+            eit_3D.change_ms_inv(lamb=alpha, method='kotre')
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+
+        sigma = copy.deepcopy(eit_3D.value_elems)
+
+        sigma[sigma < 1.0E-5] = 1.0E-5
+
+        eit_3D.up_grade_value_elems(sigma)
+
+        V = vars(copy.deepcopy(eit_3D))
+
+        V['HT_data'] = HT_data
+        V['method'] = method
+
+        # V = vars(copy.deepcopy(V))
+        for k in V.keys():
+            try:
+                V[k] = getattr(eit_3D, k)
+            except:
+                zero = 0
+
+        if not os.path.exists('data'):
+            os.makedirs('data')
+
+        TimeLabel = datetime.now().strftime("%H-%M-%S_%d-%m-%Y")
+
+        np.savez('data\\reconstruction_' + TimeLabel, np.array(V))
+        self.EIT_reconstruction = eit_3D
+        Dictionaries._AppModel['U1'] = U
+        Dictionaries._AppModel['U2'] = U2
+        self.printVoltages()
+
+
+        return eit_3D
+
+    def rotation_zy(self):
+        # print(self.keyboardBox.isVisible())
+        # if self.keyboardBox.isVisible():
+        #     self.keyboardBox.hide()
+        # print(self.keyboardBox.isVisible())
+        alpha = self.new_page.reconstruction_page.sliderHorizontal.value()
+        beta = self.new_page.reconstruction_page.sliderVertical.value()
+        Rzy = rotation_ZY(alpha, beta)
+        old_up = np.array([[-1, 0, 1]]).reshape(3, 1)
+
+        new_up = np.matmul(Rzy, old_up).reshape(-1)
+
+        colormap = np.load('cm/cm_seismic_plotly.npy')
+        sm = [[float(colormap[x][0]), colormap[x][1]] for x in range(256)]
+
+        Fig = self.EIT_reconstruction.display(middle_value=self.EIT_reconstruction.value_elems.mean(), colormap=sm)
+        # camera = dict(eye=dict(x=1.25, y=1.25, z=1.25),
+        #               up=dict(x=0,y=0,z=0),
+        #               # up=dict(x=np.round(old_up[0],2), y=np.round(old_up[1],2), z=np.round(old_up[2],2)),
+        #               center=dict(x=0, y=0, z=0)),  # the default values are 1.25, 1.25, 1.25
+        #
+        #
+        #
+        # Fig.update_layout(scene_camera=camera)
+        # Default parameters which are used when `layout.scene.camera` is not provided
+        scene = dict(camera=dict(up=dict(x=new_up[0], y=new_up[1], z=new_up[2])),  # the default values are 1.25, 1.25, 1.25
+                     xaxis=dict(),
+                     yaxis=dict(),
+                     zaxis=dict(),
+                     aspectmode='data',  # this string can be 'data', 'cube', 'auto', 'manual'
+                     # a custom aspectratio is defined as follows:
+                     aspectratio=dict(x=1, y=1, z=0.95)
+                     )
+        Fig.update_layout(scene=scene)
+        Fig.write_html("recon_html/figure.html")
+        # self.new_page.inputGraph.clear_Graph()
+        # self.new_page.inputGraph.load_html(Fig.to_html(include_plotlyjs='cdn'))
+        self.new_page.reconstruction_page.inputGraph.webview.setHtml(Fig.to_html(include_plotlyjs='cdn'))
+        # self.new_page.inputGraph.setSource(QUrl.fromLocalFile("recon_html/figure.html"))
+
+    def get_value_to_slice(self, axis, s=None):
+        if s is None:
+            s = self.EIT_3D
+        if axis == 0:
+            value = self.new_page.grid_page.x_slider.value() * 0.01
+            x_min = s.nodes[:, 0].min()
+            x_max = s.nodes[:, 0].max()
+            value = value * (x_max - x_min) + x_min
+
+        if axis == 1:
+            value = self.new_page.grid_page.y_slider.value() * 0.01
+            y_min = s.nodes[:, 1].min()
+            y_max = s.nodes[:, 1].max()
+            value = value * (y_max - y_min) + y_min
+        if axis == 2:
+            value = self.new_page.grid_page.z_slider.value() * 0.01
+            z_min = s.nodes[:, 2].min()
+            z_max = s.nodes[:, 2].max()
+            value = value * (z_max - z_min) + z_min
+        return value
+
+
+    def get_value_to_slices(self, s):
+        value_x = self.new_page.grid_page.x_slider.value() * 0.01
+        value_y = self.new_page.grid_page.y_slider.value() * 0.01
+        value_z = self.new_page.grid_page.z_slider.value() * 0.01
+        x_min = s.nodes[:, 0].min()
+        y_min = s.nodes[:, 1].min()
+        z_min = s.nodes[:, 2].min()
+        x_max = s.nodes[:, 0].max()
+        y_max = s.nodes[:, 1].max()
+        z_max = s.nodes[:, 2].max()
+        value = np.array([value_x*(x_max-x_min) + x_min,
+                          value_y*(y_max-y_min) + y_min,
+                          value_z*(z_max-z_min) + z_min])
+        return value
+
+    def build_slice(self, W_i, axis, reference_level=None):
+        if axis == 0:
+            W = list(W_i)
+            pom = np.row_stack([W[0][:, 1], W[0][:, 2]]).T
+            W[0] = pom
+            sc = build_tri(W, reference_level=reference_level)
+            Dictionaries._AppModel['Wx'] = W
+
+        if axis == 1:
+            W = list(W_i)
+            pom = np.row_stack([W[0][:, 0], W[0][:, 2]]).T
+            W[0] = pom
+            Dictionaries._AppModel['Wy'] = W
+            sc = build_tri(W, reference_level=reference_level)
+        if axis == 2:
+            W = list(W_i)
+            pom = np.row_stack([W[0][:, 0], W[0][:, 1]]).T
+            W[0] = pom
+            Dictionaries._AppModel['Wz'] = W
+
+            sc = build_tri(W, reference_level=reference_level)
+        return sc
+
+
+
+    def build_slices(self, W):
+
+        W_x = list(W[0])
+        pom_x = np.row_stack([W_x[0][:, 1], W_x[0][:, 2]]).T
+        W_x[0] = pom_x
+        W_y = list(W[1])
+        pom_y = np.row_stack([W_y[0][:, 0], W_y[0][:, 2]]).T
+        W_y[0] = pom_y
+        W_z = list(W[2])
+        pom_z = np.row_stack([W_z[0][:, 0], W_z[0][:, 1]]).T
+        W_z[0] = pom_z
+        Dictionaries._AppModel['Wx'] = W_x
+        Dictionaries._AppModel['Wy'] = W_y
+        Dictionaries._AppModel['Wz'] = W_z
+        sc_x = build_tri(W_x)
+        sc_y = build_tri(W_y)
+        sc_z = build_tri(W_z)
+
+        # im_x = QImage(sc_x.buffer_rgba(), sc_x.size().height(), sc_x.width(), QImage.Format_ARGB32)
+        # im_y = QImage(sc_y.buffer_rgba(), sc_y.size().height(), sc_y.width(), QImage.Format_ARGB32)
+        # im_z = QImage(sc_z.buffer_rgba(), sc_z.size().height(), sc_z.width(), QImage.Format_ARGB32)
+
+        return [sc_x, sc_y, sc_z]
+
+
+    def change_axis_slices(self):
+        scene = dict(camera=dict(eye=dict(x=2, y=2, z=2)),
+                     xaxis=dict(),
+                     yaxis=dict(),
+                     zaxis=dict(),
+                     aspectmode='data',
+                     aspectratio=dict(x=1, y=1, z=1.95)
+                     )
+        s = Dictionaries._AppModel['Model']
+        value = self.get_value_to_slices(s)
+        Dictionaries._AppModel['value_x'] = value[0]
+        Dictionaries._AppModel['value_y'] = value[1]
+        Dictionaries._AppModel['value_z'] = value[2]
+
+        colormap = np.load('cm/cm_seismic_plotly.npy')
+        sm = [[float(colormap[x][0]), colormap[x][1]] for x in range(256)]
+        [fig_slices, W] = s.display_slice(axis=np.array([0, 1, 2]), value=value, middle_value=s.value_elems.mean(), colormap=sm)
+
+        fig_slices.update_layout(scene=scene)
+        fig_slices.update_traces(showscale=False)
+        fig_slices.write_image("recon_html/figure.png", width=400, height=400)
+        pixmap = QPixmap('recon_html/figure.png')
+
+        self.new_page.grid_page.axis_slices.setPixmap(pixmap)
+        self.new_page.grid_page.axis_slices.show()
+
+
+    def change_slicer_x(self, axis3D = True):
+        if axis3D:
+            self.change_axis_slices()
+        s = Dictionaries._AppModel['Model']
+        value = self.get_value_to_slice(0, s)
+        reference_level = s.value_elems.mean()
+
+        W = s.build_slice(0, value)
+
+        slice = self.build_slice(W, 0, reference_level=reference_level)
+
+        self.new_page.grid_page.axis_slice_x.setPixmap(slice)
+        self.new_page.grid_page.axis_slice_x.show()
+        x_text = QCoreApplication.translate("MainWindow", Dictionaries._AppLang['Slice plane x = ']
+        [Dictionaries._AppVars['Language']], None)
+        self.new_page.grid_page.x_text.setText(x_text + str(value))
+
+
+    def change_slicer_y(self, axis3D=True):
+        if axis3D:
+            self.change_axis_slices()
+        s = Dictionaries._AppModel['Model']
+        value = self.get_value_to_slice(1, s)
+        reference_level = s.value_elems.mean()
+
+        W = s.build_slice(1, value)
+
+        slice = self.build_slice(W, 1, reference_level=reference_level)
+
+        self.new_page.grid_page.axis_slice_y.setPixmap(slice)
+        self.new_page.grid_page.axis_slice_y.show()
+        y_text = QCoreApplication.translate("MainWindow", Dictionaries._AppLang['Slice plane y = ']
+        [Dictionaries._AppVars['Language']], None)
+        self.new_page.grid_page.y_text.setText(y_text + str(value))
+
+
+    def change_slicer_z(self, axis3D=True):
+        if axis3D:
+            self.change_axis_slices()
+        s = Dictionaries._AppModel['Model']
+        value = self.get_value_to_slice(2, s)
+        reference_level = s.value_elems.mean()
+
+        W = s.build_slice(2, value)
+
+        slice = self.build_slice(W, 2, reference_level=reference_level)
+
+        self.new_page.grid_page.axis_slice_z.setPixmap(slice)
+        self.new_page.grid_page.axis_slice_z.show()
+        z_text = QCoreApplication.translate("MainWindow", Dictionaries._AppLang['Slice plane z = ']
+                [Dictionaries._AppVars['Language']], None)
+        self.new_page.grid_page.z_text.setText(z_text + str(value))
+
+    def printVoltages(self):
+        # pixmap = print_voltages(U1, U2)
+        U1 = Dictionaries._AppModel['U1']
+        U2 = Dictionaries._AppModel['U2']
+
+        pen1 = pg.mkPen(color=(255, 0, 0), width=2, style=QtCore.Qt.SolidLine)
+        pen2 = pg.mkPen(color=(0, 0, 255), width=2, style=QtCore.Qt.SolidLine)
+
+
+        # self.new_page.grid_page.axis_voltages = pg.plot()
+        try:
+            self.new_page.grid_page.axis_voltages.clear()
+        except:
+            zero = 0
+        self.new_page.grid_page.axis_voltages.addLegend()
+
+        # Dodawanie danych do wykresu
+        self.new_page.grid_page.axis_voltages.plot(U1, pen=pen1, name='Voltages real')
+        self.new_page.grid_page.axis_voltages.plot(U2, pen=pen2, name='Voltages calculated')
+
+        self.new_page.grid_page.axis_voltages.setBackground('white')
+        self.new_page.grid_page.axis_voltages.plot()
+
+
+
+    def do_nothing(self):
+        pass
+
+
+
+
+
+
+
 
 

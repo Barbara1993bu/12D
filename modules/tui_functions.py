@@ -1,22 +1,54 @@
 
+import logging
+import sys
+from io import StringIO
+from contextlib import redirect_stdout
 
 # import main file
 import time
+import copy
+from datetime import datetime
+import matplotlib.pyplot as plt
+import numpy as np
+
+import matplotlib
+
+# matplotlib.use('QtAgg')
 
 from app import *
 
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
 
 import time
 import traceback, sys
 
 import os
 
+from modules import *
+
+
+class MplCanvas(FigureCanvasQTAgg):
+
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+        self.figCanv = FigureCanvasQTAgg(self.fig)
+        super(MplCanvas, self).__init__(self.fig)
+
+    # def set_canvas(self):
+    #     return FigureCanvasQTAgg(self.fig)
+
 # global variables
 GLOBAL_STATE = False
 GLOBAL_TITLE_BAR = True
+
+logger = logging.getLogger()
+fileHandler = logging.FileHandler("logfile.log")
+streamHandler = logging.StreamHandler(sys.stdout)
+
 
 class WorkerSignals(QObject):
     '''
@@ -37,10 +69,10 @@ class WorkerSignals(QObject):
         int indicating % progress
 
     '''
-    finished = pyqtSignal()
-    error = pyqtSignal(tuple)
-    result = pyqtSignal(object)
-    progress = pyqtSignal(int)
+    finished = Signal()
+    error = Signal(tuple)
+    result = Signal(object)
+    progress = Signal(int)
 
 
 class Worker(QRunnable):
@@ -69,7 +101,7 @@ class Worker(QRunnable):
         # Add the callback to our kwargs
         self.kwargs['progress_callback'] = self.signals.progress
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         '''
         Initialise the runner function with passed args, kwargs.
@@ -104,6 +136,7 @@ class Worker(QRunnable):
 
 
 class TUIFunctions(MainWindow):
+
 
 
     # return status
@@ -212,8 +245,7 @@ class TUIFunctions(MainWindow):
             right_width = 0
 
         # animation right box
-        self.right_box = QPropertyAnimation(
-            self.tui.extraRightBox, b"minimumWidth")
+        self.right_box = QPropertyAnimation(self.tui.extraRightBox, b"minimumWidth")
         self.right_box.setDuration(Settings.TIME_ANIMATION)
         self.right_box.setStartValue(right_box_width)
         self.right_box.setEndValue(right_width)
@@ -268,6 +300,9 @@ class TUIFunctions(MainWindow):
         for w in self.tui.topMenu.findChildren(QPushButton):
             if w.objectName() == widget:
                 w.setStyleSheet(TUIFunctions.selectMenu(w.styleSheet()))
+        for w in self.tui.new_page.findChildren(QPushButton):
+            if w.objectName() == widget:
+                w.setStyleSheet(TUIFunctions.selectMenu(w.styleSheet()))
 
     # reset page selection
     def resetStyle(self, widget):
@@ -278,6 +313,10 @@ class TUIFunctions(MainWindow):
         for w in self.tui.bottomMenu.findChildren(QPushButton):
             if w.objectName() != widget:
                 w.setStyleSheet(TUIFunctions.deselectMenu(w.styleSheet()))
+        for w in self.tui.new_page.findChildren(QPushButton):
+            if w.objectName() != widget:
+                w.setStyleSheet(TUIFunctions.deselectMenu(w.styleSheet()))
+
 
     # import QSS theme
     def theme(self, file, useCustomTheme):
@@ -325,3 +364,40 @@ class TUIFunctions(MainWindow):
 
         # shut down device
         self.tui.btn_shutDownDevice.clicked.connect(lambda: self._shut_down())
+
+    def stackPage(self):
+
+
+
+        # tof meas
+
+        self.tui.new_page.btn_meas.clicked.connect(lambda: TUIFunctions.tofNewPage_StackPages(self, "meas_page"))
+        self.tui.new_page.btn_grid.clicked.connect(lambda: TUIFunctions.tofNewPage_StackPages(self, "grid_page"))
+        self.tui.new_page.btn_recontruction_frame.clicked.connect(
+            lambda: TUIFunctions.tofNewPage_StackPages(self, "reconstruction_page"))
+
+
+
+
+
+    def tofNewPage_StackPages(self, page):
+        color1 = "background:rgba(90,90,250,90)"
+        color2 = "background:rgba(90,90,100,90)"
+        self.tui.new_page.MeasFrame.setStyleSheet(color1)
+        self.tui.new_page.ReconFrame.setStyleSheet(color1)
+        self.tui.new_page.GridFrame.setStyleSheet(color1)
+
+        if page == "meas_page":
+            self.tui.new_page.newPage_StackedWidget.setCurrentWidget(self.tui.new_page.meas_page)
+            self.tui.new_page.MeasFrame.setStyleSheet(color2)
+
+        elif page == "grid_page":
+            self.tui.new_page.newPage_StackedWidget.setCurrentWidget(self.tui.new_page.grid_page)
+            self.tui.new_page.GridFrame.setStyleSheet(color2)
+            # self.tui.new_page.grid_page.setStyleSheet("background:rgba(90,90,150,90)")
+        elif page == "reconstruction_page":
+            self.tui.new_page.newPage_StackedWidget.setCurrentWidget(self.tui.new_page.reconstruction_page)
+            self.tui.new_page.ReconFrame.setStyleSheet(color2)
+            # self.tui.new_page.reconstruction_page.setStyleSheet("background:rgba(90,90,150,90)")
+
+
