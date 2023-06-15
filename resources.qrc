@@ -29,5 +29,10 @@
     <file>images/icons/smile.svg</file>
     <file>images/icons/alert-circle.svg</file>
     <file>images/icons/check-circle.svg</file>
+	<file>images/icons/grid.svg</file>
+	<file>images/icons/activity.svg</file>
+	<file>images/icons/image.svg</file>
+	<file>images/icons/download.svg</file>
+	
   </qresource>
 </RCC>
