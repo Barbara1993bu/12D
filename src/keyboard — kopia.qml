@@ -9,6 +9,8 @@ Item {
     id: window
     x: 0
     y: 320
+    
+    
 	
     Rectangle
     {
@@ -23,6 +25,8 @@ Item {
         id: inputPanel
         width: window.width
         height: window.height
+	property var isKeyboardActive: inputPanel.active 
+        objectName: "inputPanel_object"
 
         states: State {
             name: "visible"

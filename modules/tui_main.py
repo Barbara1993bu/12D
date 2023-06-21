@@ -705,35 +705,10 @@ class tui_MainWindow(object):
 
         # -----------------------------------------
         # Widgets Frame
-        self.widgets = QWidget()
-        self.widgets.setObjectName(u"widgets")
-        self.widgets.setStyleSheet(u"b")
-
-        self.vertLayoutWidgets = QVBoxLayout(self.widgets)
-        self.vertLayoutWidgets.setObjectName(u"vertLayoutWidgets")
-
-
-        # # self.testinput = self.nxQLineEdit
-        # self.vertLayoutWidgets.addWidget(self.nxQLineEdit)
-
-        # test = QCheckBox()
-        # test.setStyleSheet("QCheckBox::indicator { width: 50px; height: 50px;}")
-        # self.vertLayoutWidgets.addWidget(test)
-
-
-
-        self.vertLayoutWidgets.addWidget(self.nxQLineEdit)
-
-        self.vertLayoutWidgets.addWidget(self.nxQDateEdit)
-
-        self.vertLayoutWidgets.addWidget(self.nxQDateTimeEdit)
-
-        self.vertLayoutWidgets.addWidget(self.nxQDoubleSpinBox)
-        self.vertLayoutWidgets.addWidget(self.nxQTimeEdit)
-        # self.vertLayoutWidgets.addWidget(self.nxQTimeEdit)
-
+        self.widgets = param_page()
 
         self.stackedWidget.addWidget(self.widgets)
+        # self.stackedWidget.addWidget(self.widgets)
 
 
         # -----------------------------------------
@@ -743,13 +718,13 @@ class tui_MainWindow(object):
         # attach new page to stacked widgets
         self.stackedWidget.addWidget(self.new_page)
 
-        # ------------------------------------------
-        self.grid_page = grid_page()
-        self.stackedWidget.addWidget(self.grid_page)
-
-        # ------------------------------------------
-        self.meas_page = meas_page()
-        self.stackedWidget.addWidget(self.meas_page)
+        # # ------------------------------------------
+        # self.grid_page = grid_page()
+        # self.stackedWidget.addWidget(self.grid_page)
+        #
+        # # ------------------------------------------
+        # self.meas_page = meas_page()
+        # self.stackedWidget.addWidget(self.meas_page)
 
 
 
@@ -1071,6 +1046,19 @@ class tui_MainWindow(object):
         self.btn_widgets.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Widgets'][Dictionaries._AppVars['Language']], None))
 
+        self.widgets.Label_tryb.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Tryb'][Dictionaries._AppVars['Language']], None))
+        self.widgets.Label_stim_pattern.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Stim'][Dictionaries._AppVars['Language']], None))
+        self.widgets.Label_frequency.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Freq'][Dictionaries._AppVars['Language']], None))
+        self.widgets.Label_interval_frame.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Interval frame'][Dictionaries._AppVars['Language']], None))
+        self.widgets.Label_amp.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Amp'][Dictionaries._AppVars['Language']], None))
+        self.widgets.Label_int_frame.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Int frame'][Dictionaries._AppVars['Language']], None))
+
         self.btn_new.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['EIT 3D'][Dictionaries._AppVars['Language']], None))
         self.new_page.btn_grid.setText(QCoreApplication.translate("MainWindow",
@@ -1276,7 +1264,7 @@ class tui_MainWindow(object):
 
         # ['Tikhonov', 'Damp_Newton', 'Kotre',
         #  'Marquardt-Levenberg', 'Total Variation']
-        if method == 'Damp_Newton' or method == 'Total Variation':
+        if method == 'Gausse-Newton' or method == 'Total Variation':
 
             R = matrix_laplacea(eit_3D.elems, eit_3D.nodes, 'tetra')
 

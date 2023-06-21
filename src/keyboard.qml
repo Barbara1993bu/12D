@@ -6,7 +6,7 @@ import QtQuick.VirtualKeyboard.Styles 2.15
 
 
 Item {
-    id: window
+    id: windowK
     x: 0
     y: 320
     
@@ -14,7 +14,7 @@ Item {
 	
     Rectangle
     {
-        id: background
+        id: backgroundK
 	anchors.centerIn: parent
     	width: 1000
     	height: 1000
@@ -22,19 +22,19 @@ Item {
     }
 
     InputPanel {
-        id: inputPanel
-        width: window.width
-        height: window.height
+        id: inputPanelK
+        width: windowK.width
+        height: windowK.height
 	property var isKeyboardActive: inputPanel.active 
         objectName: "inputPanel_object"
 
         states: State {
             name: "visible"
-            when: inputPanel.active
+            when: inputPanelK.active
             PropertyChanges {
-                target: window
-                height: inputPanel.height
-                y: window.height - inputPanel.height
+                target: windowK
+                height: inputPanelK.height
+                y: windowK.height - inputPanelK.height
             }
         }
         transitions: Transition {

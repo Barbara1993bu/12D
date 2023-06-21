@@ -420,25 +420,28 @@ class MainWindow(QMainWindow):
             self.tui.keyboardBox.setGeometry(QRect(0, 0, 1920, 0))
 
         # definition of virtual keyboard triggers
-        widgets.nxQLineEdit.focused.connect(openKeyboardTab)
-        widgets.nxQLineEdit.noneFocused.connect(closeKeyboardTab)
-        # nxQDateEdit trigger
-        widgets.nxQDateEdit.focused.connect(openKeyboardTab)
-        widgets.nxQDateEdit.noneFocused.connect(closeKeyboardTab)
-        # nxQDateTimeEdit trigger
-        widgets.nxQDateTimeEdit.focused.connect(openKeyboardTab)
-        widgets.nxQDateTimeEdit.noneFocused.connect(closeKeyboardTab)
-        # nxQDoubleSpinBox trigger
-        widgets.nxQDoubleSpinBox.focused.connect(openKeyboardTab)
-        widgets.nxQDoubleSpinBox.noneFocused.connect(closeKeyboardTab)
-        # nxQDateTimeEdit trigger
-        widgets.nxQTimeEdit.focused.connect(openKeyboardTab)
-        widgets.nxQTimeEdit.noneFocused.connect(closeKeyboardTab)
-        # widgets.new_page.inputGraph.focused.connect(closeKeyboardTab)
-        # widgets.new_page.inputGraph.noneFocused.connect(closeKeyboardTab)
-        # widgets.keyboardwidget.
+        widgets.widgets.LineEdit_interval_frame.focused.connect(openKeyboardTab)
+        widgets.widgets.LineEdit_int_frame.focused.connect(openKeyboardTab)
+        widgets.widgets.LineEdit_interval_frame.noneFocused.connect(closeKeyboardTab)
+        widgets.widgets.LineEdit_int_frame.noneFocused.connect(closeKeyboardTab)
 
-        # self.tui.btn_restartApp.clicked.connect(self.restart)
+        # # nxQDateEdit trigger
+        # widgets.nxQDateEdit.focused.connect(openKeyboardTab)
+        # widgets.nxQDateEdit.noneFocused.connect(closeKeyboardTab)
+        # # nxQDateTimeEdit trigger
+        # widgets.nxQDateTimeEdit.focused.connect(openKeyboardTab)
+        # widgets.nxQDateTimeEdit.noneFocused.connect(closeKeyboardTab)
+        # # nxQDoubleSpinBox trigger
+        # widgets.nxQDoubleSpinBox.focused.connect(openKeyboardTab)
+        # widgets.nxQDoubleSpinBox.noneFocused.connect(closeKeyboardTab)
+        # # nxQDateTimeEdit trigger
+        # widgets.nxQTimeEdit.focused.connect(openKeyboardTab)
+        # widgets.nxQTimeEdit.noneFocused.connect(closeKeyboardTab)
+        # # widgets.new_page.inputGraph.focused.connect(closeKeyboardTab)
+        # # widgets.new_page.inputGraph.noneFocused.connect(closeKeyboardTab)
+        # # widgets.keyboardwidget.
+        #
+        # # self.tui.btn_restartApp.clicked.connect(self.restart)
 
         # show application
         self.show()

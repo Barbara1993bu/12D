@@ -21,6 +21,7 @@ from . Grid_Page import *
 from . Meas_Page import *
 from . Recontruction_Page import *
 from . new_page_widget import *
+from . Param_device import *
 
 
 

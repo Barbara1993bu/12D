@@ -25,6 +25,13 @@ class Dictionaries():
         'Hide': ['Hide', 'Ukryj'],
         'Home': ['Home', 'Start'],
         'Widgets': ['Widgets', 'Widżety'],
+        'Tryb': ['Type', 'Tryb'],
+        'Stim': ['Stim pattern', 'Wzorzec stymulacji'],
+        'Freq': ['Frequency', 'Częstotliwość'],
+        'Interval frame': ['Interval frame', 'Interwał między ramkami'],
+        'Amp': ['Amp', 'Amp'],
+        'Int frame': ['No. frame', 'Liczba ramek'],
+
         'EIT 3D': ['EIT 3D', 'EIT 3D'],
         'Visualisation': ['Vis. slices', 'Wiz. przekrojów'],
         'Measurment': ['Measurment', 'Pomiary'],

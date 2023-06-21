@@ -16,6 +16,7 @@ from scipy.signal import argrelextrema
 import functools
 import copy
 from numba import jit
+from MatrixD import matrixD
 
 # import matplotlib.pyplot as plt
 # import pickle
@@ -1763,6 +1764,218 @@ class Image_EIT_3D_tetra:
         self.iteration_solution = recon
         self.value_of_obj_fun = obj_fun_val
         return x0
+
+    @wrapper
+    def reconstruction_total_variation(self, vol_meas, num_iterations=2, alpha_tv=1e-10, difference_reconstruction=False,
+                                        tikhonov_as_first_step=False, alpha_tikhonov=1e-6, beta=1e-4):
+        """
+         Metoda regularyzacyjna Total Variation dla klasy ImageEIT_3D_tetra
+
+        :param vol_meas: - ramka pomiarowa
+        :param num_iterations: - liczba iteracji (domyślnie 2)
+        :param alpha_tv: - parametr regularyzacyjny dla metody Total Vatiation (domyślnie 1e-10)
+        :param difference_reconstruction: True or False - zdefiniowanie czy wprowadzamy różnicę ramek pomiarowych
+                czy tylko samą pojedyńczą ramkę
+        :param tikhonov_as_first_step: True or False - krok początkowy, jeśli True krok=0 liczony jest metodą
+                Tikhonov'a, gdy False startujemy z ramki przewodnictwa będącej zerami
+        :param alpha_tikhonov: - parametr regularyzacyjny dla metody Tikhonov'a (domyślnie 1e-6)
+        :param beta: - parametr pomocniczy (domyślnie 1e-4)
+        :return: "conductance_tv" - zmienna która jest listą wartości przewodnictwa otrymaną w ostatnim kroku algorytmu
+        """
+        MS = self.MS
+        D_matrix = matrixD(self.elems, self.nodes)
+
+        n_rows, n_columns = D_matrix.shape
+
+        D_matrix = sp.csr_array(D_matrix)
+
+        # regularization parameters
+
+        min_difference = 1e-6
+
+        delta_beta = 0.8
+
+        epsilon = 10 ** (-6)
+
+        # initial values of sigma
+
+        conductance_tv = np.zeros(n_columns)
+
+        # let's define begining conditions as tikhonov regularization
+
+        if tikhonov_as_first_step == True:
+            conductance_tv = self.reconstruction_tikh(vol_meas, alpha_tikhonov)
+
+        # auxiliary variable
+
+        temp_par = np.zeros(n_rows)
+
+        # number list for the line search procedure from range 0-1
+
+        temp_list = ([0, 1e-5, 1e-4, 1e-3, 1e-2, 0.1, 0.25, 0.5, 0.75, 1])
+
+        # list of conductance for every step
+
+        conductance_list = [np.zeros(conductance_tv.shape)] * (num_iterations + 1)
+
+        conductance_list[0] = conductance_tv
+
+        scale_par = 1
+
+        # ---------------------------------
+        # main loop
+
+        finish_procedure = 0  # it closes the loop if it is equal to 1
+
+        primal_desc_temp_old = np.inf
+
+        itr_counter = 0
+
+        while itr_counter < num_iterations and finish_procedure == 0:
+
+            # try new values of voltages
+
+            vol_sim = MS @ conductance_tv
+
+            # calculate auxiliary variable
+
+            temp_var = D_matrix @ conductance_tv
+
+            # calculate other coeficient
+
+            eta = np.sqrt(temp_var * temp_var + beta)
+
+            # primal and dual coefficients
+
+            primal = (np.abs(temp_var)).sum()
+
+            dual = (temp_par * temp_var).sum()
+
+            # close the loop is primal is not descending
+
+            delta_vol = vol_sim - vol_meas
+
+            primal_desc_temp = (np.linalg.norm(delta_vol)) ** 2 + alpha_tv * primal
+
+            # check that the conductance is descending
+
+            if np.abs(primal_desc_temp / primal_desc_temp_old - 1) < min_difference:
+
+                print("New value of the conductance is the same as previous one!")
+                print("Iteration number: " + str(itr_counter))
+
+                break
+
+            else:
+                primal_desc_temp_old = primal_desc_temp
+
+            # declaration of auxiliary matrices
+
+            # E_matrix = np.zeros((n_rows, n_rows))
+            E_matrix_inv = np.zeros((n_rows, n_rows))
+            K_matrix = np.zeros((n_rows, n_rows))
+
+            K_diag_elems = np.ones(n_rows) - (1 / eta) * temp_par * temp_var
+
+            for i in range(0, n_rows):
+                # E_matrix[i][i] = eta[i]
+                E_matrix_inv[i][i] = 1 / eta[i]
+                K_matrix[i][i] = K_diag_elems[i]
+
+            # E_matrix = sp.csr_array(E_matrix)
+            E_matrix_inv = sp.csr_array(E_matrix_inv)
+            K_matrix = sp.csr_array(K_matrix)
+
+            # precompute variable
+
+            M1 = E_matrix_inv @ K_matrix @ D_matrix
+
+            constant_var = MS.T @ MS + alpha_tv * D_matrix.T @ M1
+
+            # compute conductance difference
+
+            delta_conductance = -np.linalg.inv(constant_var) @ (
+                        alpha_tv * D_matrix.T @ E_matrix_inv @ temp_var + MS.T @ (delta_vol))
+
+            # try different regularizations
+
+            reg_values = np.zeros(len(temp_list))
+
+            for i in range(0, len(temp_list)):
+                meas_itr = MS @ (conductance_tv + temp_list[i] * delta_conductance)
+
+                reg_values[i] = 0.5 * (np.linalg.norm(meas_itr - vol_meas)) ** 2 + alpha_tv * (
+                    np.abs(D_matrix @ (conductance_tv + temp_list[i] * delta_conductance))).sum()
+
+            # value and position of minimum element
+
+            temp, ind = reg_values.min(), np.argmin(reg_values)
+
+            # update conductivity values
+
+            conductance_tv = conductance_tv + temp_list[ind] * delta_conductance
+
+            # difference od auxiliary parameter
+
+            delta_temp_par = - temp_par + E_matrix_inv @ temp_var + M1 @ delta_conductance
+
+            # dual variable step length rule
+
+            limits = np.sign(delta_temp_par)  # sigmoid adds/subtracts delta_temp_par to/from temp_par
+
+            distance_from_limits = limits - temp_par  # the distances from the limits
+
+            # where zeros we put small value to protect against division by 0
+
+            delta_temp_par[delta_temp_par == 0] = 1e-6
+
+            # we avoid distances for which temp_par exceeds the limits of distance*delta_temp_par
+
+            distances = distance_from_limits / delta_temp_par
+
+            idxs = distances == 0
+
+            distances[idxs] = delta_temp_par[idxs]
+
+            # the smallest value of distances multiplied by delta_temp_par
+
+            temp_par = temp_par + np.array((1, 0.99 * distances.min())).min() * delta_temp_par
+
+            # if we do not perform difference reconstruction we need to scale the conductances
+
+            if difference_reconstruction == True:
+                conductance_tv[conductance_tv < 0.01 * scale_par] = 0.01 * scale_par
+
+                conductance_tv[conductance_tv > 100 * scale_par] = 100 * scale_par
+
+            # reduction of beta coefficient
+
+            beta = beta * delta_beta
+
+            delta_beta = 0.75 * delta_beta  # delta_beta adjustment
+
+            # minimum beta declaration
+
+            if beta < 2e-12:
+                beta = 2e-12
+
+            # the algorithm is stopped when primal-dual gap and ||vol_sim-vol_meas|| is smaller than the epsilon
+
+            if (np.abs(temp_var) - temp_par * temp_var).sum() < epsilon and np.linalg.norm(delta_vol) < epsilon:
+                finish_procedure = 1
+
+            # increment the counter
+
+            itr_counter += 1
+
+            # write new conductance values to list
+
+            conductance_list[itr_counter] = conductance_tv
+
+        self.up_grade_value_elems(conductance_tv)
+
+        return conductance_tv
+
 
     @wrapper
     def reconstruction(self, dv, lamb=None, p=0.5, method=None, value_obj_fun=False):
