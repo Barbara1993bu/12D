@@ -254,7 +254,11 @@ class reconstruction_page(QWidget):
 
         self.Layout_parameters_of_reconstruction.addWidget(self.QcomboBox_regularyzation_parameter)
 
-        self.btn_reconstruction = QPushButton(self.Frame_parameters_of_reconstruction)
+        self.Frame_btn_reconstruction = QFrame(self.Frame_parameters_of_reconstruction)
+        self.Layout_btn_reconstruction = QHBoxLayout(self.Frame_btn_reconstruction)
+        self.Frame_btn_reconstruction.setLayout(self.Layout_btn_reconstruction)
+
+        self.btn_reconstruction = QPushButton(self.Frame_btn_reconstruction)
         self.btn_reconstruction.setObjectName(u"btn_reconstruction")
         sizePolicy.setHeightForWidth(self.btn_reconstruction.sizePolicy().hasHeightForWidth())
         self.btn_reconstruction.setSizePolicy(sizePolicy)
@@ -274,9 +278,31 @@ class reconstruction_page(QWidget):
                                               "QPushButton:pressed {	\n"
                                               "	background-color: rgb(40,40,250);\n"
                                               "}")
+        self.Layout_btn_reconstruction.addWidget(self.btn_reconstruction)
 
+        self.btn_reconstruction_device = QPushButton(self.Frame_btn_reconstruction)
+        self.btn_reconstruction_device.setObjectName(u"btn_reconstruction_device")
+        sizePolicy.setHeightForWidth(self.btn_reconstruction.sizePolicy().hasHeightForWidth())
+        self.btn_reconstruction_device.setSizePolicy(sizePolicy)
+        self.btn_reconstruction_device.setFixedSize(200, 50)
+        # self.btn_reconstruction.setFixedSize(200,50)
+        # self.btn_reconstruction.setStyleSheet("border-radius: 10px;")
+        # self.btn_reconstruction.setStyleSheet(u"border-radius: 10px;")
+        self.btn_reconstruction_device.setStyleSheet(u"QPushButton {\n"
+                                                     "	background-color: rgb(147, 186, 249);\n"
+                                                     "background-repeat: no-repeat;\n"
+                                                     "border-radius: 10px;\n"
+                                                     "font-size: 15px;\n"
+                                                     "}\n"
+                                                     "QPushButton:hover {\n"
+                                                     "	background-color: rgb(147, 186, 249);\n"
+                                                     "}\n"
+                                                     "QPushButton:pressed {	\n"
+                                                     "	background-color: rgb(40,40,250);\n"
+                                                     "}")
 
-        self.Layout_parameters_of_reconstruction.addWidget(self.btn_reconstruction)
+        self.Layout_btn_reconstruction.addWidget(self.btn_reconstruction_device)
+        self.Layout_parameters_of_reconstruction.addWidget(self.Frame_btn_reconstruction)
 
         self.Info_box = QTextEdit()
         self.Info_box.setObjectName(u"info_box")

@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import datetime
 
@@ -16,8 +17,10 @@ import cv2
 #
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 # matplotlib.use('QtAgg')
-
+import socket
+import sys
 import PySide2
+import multiprocessing
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
@@ -315,6 +318,8 @@ class SlicesDialog(QDialog):
 
 
 
+
+
 # -----------------------------------------
 # main TUI Window
 # -----------------------------------------
@@ -322,6 +327,10 @@ class SlicesDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.clientname = "EITDevice"
+        self.host = '10.10.2.149'
+        self.port = 500
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # # make app full-screen
         self.setWindowState(self.windowState() | Qt.WindowFullScreen)
@@ -368,11 +377,15 @@ class MainWindow(QMainWindow):
 
         widgets.btn_settings.clicked.connect(self.buttonClick)
 
+        widgets.widgets.btn_send_params.clicked.connect(self.send_param_do_recon)
+        widgets.widgets.btn_STOP.clicked.connect(self.STOP_device)
+
         widgets.new_page.meas_page.Set_of_colorMap.currentIndexChanged.connect(self.change_colorMap)
 
         widgets.new_page.reconstruction_page.btn_Model.clicked.connect(self.buttonModelClick)
         widgets.new_page.reconstruction_page.btn_voltages_EIT.clicked.connect(self.buttonVoltagesClick)
         widgets.new_page.reconstruction_page.btn_reconstruction.clicked.connect(self.buttonReconstructionClick)
+        widgets.new_page.reconstruction_page.btn_reconstruction_device.clicked.connect(self.buttonReconstructionDeviceClick)
         widgets.new_page.reconstruction_page.sliderHorizontal.valueChanged.connect(self.tui.rotation_zy)
         widgets.new_page.reconstruction_page.sliderVertical.valueChanged.connect(self.tui.rotation_zy)
         # widgets.new_page.reconstruction_page.inputGraph.webview.selectionChanged.connect(self.mousePressEvent)
@@ -388,6 +401,10 @@ class MainWindow(QMainWindow):
 
 
         widgets.new_page.grid_page.btn_saveVis.clicked.connect(self.saveVis)
+
+        # language option buttons
+        widgets.setting_page.btnLangEnglish.clicked.connect(self.languageButtonClick)
+        widgets.setting_page.btnLangPolish.clicked.connect(self.languageButtonClick)
 
 
         # functions of stack buttons for sub-frames
@@ -465,13 +482,256 @@ class MainWindow(QMainWindow):
             TUIFunctions.selectMenu(
                 widgets.btn_home.styleSheet()))
 
+
+    def connection(self):
+        try:
+            self.s.connect((self.host, self.port))
+            self.tui.widgets.btn_STOP.setEnabled(True)
+            QMessageBox.warning(self, "Connection", "Connection made")
+        except:
+            print("Failed to connect with {}:{}" .format(self.host, self.port))
+        message = Dictionaries._AppVars['message']
+        self.s.sendall(message.encode())
+
+
+    def receivemessage(self, progress_callback=None):
+        # self.sendmessage()
+        while Dictionaries._AppVars['recon_dane'] == False:
+            total_frame = ''
+            while True:
+                data = self.s.recv(9535)
+                endData = data.decode()[-3:]
+
+                try:
+                    if endData != 'FEFF':
+                    # if data.decode()[-1] != '}':
+                        total_frame += data.decode('utf-8')
+                    else:
+                        total_frame += data.decode('utf-8')
+                        self.Voltages_from_json(total_frame)
+                        self.buttonReconstructionClick()
+
+
+                        break  # show in terminal
+                except:
+                    zero = 0
+            time.sleep(10)
+            message = 'Kolejna ramka'
+            self.tui.update_message_box(new_message=message)
+            self.s.sendall(message.encode('utf-8'))
+        return 'Done'
+
+
+
+    def sendmessage(self):
+        self.tui.update_message_box(new_message='pobieranie ramki danych')
+        serie = self.tui.widgets.LineEdit_int_frame.value()
+        # live = 'True' if (serie <= 0) else 'false'
+        message = {
+            "sequence": {},
+            "payload": {
+                "measurement": "read",
+                "serie": str(serie)}
+        }
+        jm = json.dumps(message)
+        self.s.sendall(jm.encode())
+
+
+
+    def STOP_device(self):
+        message = {
+            "sequence": {},
+            "payload": {
+                "start": "false"
+            }
+        }
+        jm = json.dumps(message)
+        self.s.sendall(jm.encode('utf-8'))
+        Dictionaries._AppVars['recon_dane'] = 'True'
+        self.s.close()
+        self.tui.widgets.btn_STOP.setEnabled(False)
+
+
     # button clicks
 
     # def MeasPage_mouseMove(self, s):
     #     color = Settings.BTN_RIGHT_BOX_COLOR
     #     style = widgets.stackedWidget.new_page.btn_meas.styleSheet()
     #     self.tui.new_page.btn_meas.setStyleSheet("background:rgba(90,90,250,90)")
+    def SPDR_progress(self, s):
+        self.tui.update_message_box(new_message=s)
 
+    def SPDR_complete(self, s=None):
+        if s == None:
+            s="Done"
+        self.tui.update_message_box(new_message=s)
+
+
+    def send_param_do_recon(self):
+        self.send_param()
+        self.connection()
+
+        # worker_process.start()
+
+        # Oczekiwanie na zakończenie workera
+        # worker_process.join()
+        # worker = Worker(self.send_param)
+        # # worker = Worker(self.tui.solve_inverse_problem_device)
+        # worker.signals.progress.connect(self.SPDR_progress)
+        # # worker.signals.result.connect(self.SPDR_results)
+        # worker.signals.finished.connect(self.SPDR_complete)
+        # self.threadpool.start(worker)
+
+    def buttonReconstructionDeviceClick(self):
+        worker = Worker(self.receivemessage)
+        worker.signals.finished.connect(self.SPDR_complete)
+        self.threadpool.start(worker)
+
+
+    def send_param(self):
+        type = self.tui.widgets.ComboBox_tryb.currentText()
+        mode = 0 if type == 'EIT' else 1 if type == 'ECT' else 2
+        sequence = self.tui.widgets.ComboBox_stim_pattern.currentText()
+        excitation = 0 if sequence == '32(0-4)' else 1 if sequence == '32(0-8)' else 2 if sequence == '32(0-16)' else 3
+        frequency = self.tui.widgets.ComboBox_frequency.currentText()
+        interval_frame = self.tui.widgets.LineEdit_interval_frame.value()
+        amp = self.tui.widgets.Slider_amp.slider.value()
+        serie = self.tui.widgets.LineEdit_int_frame.value()
+        live = 'True' if (serie <= 0) else 'false'
+
+
+        dictionary = {
+            "sequence": {},
+            "payload": {
+                "mode": str(mode),
+                "excitation": str(excitation),
+                "frequency": frequency,
+                "current": str(amp) + 'uA',
+                "storage_dest": "USB",
+                "measurement_time": str(interval_frame),
+                "measurement_count": str(serie),
+            }
+        }
+        finite_element_mesh = self.tui.new_page.reconstruction_page.Label_load_model.text()
+        mesh = load_mesh_from_mat_file_v2(finite_element_mesh)
+
+        stim_structure = {
+            'n_electrodes': len(mesh['electrodes_nodes']),
+            'd_stim': int(sequence[-2]),
+            'd_meas': 1,
+            'z_contact': mesh['z_contact'],
+            'amp': amp,
+        }
+        # ustawienie danych modelu
+        stimulation = stim_pattern(stim_structure)
+        Dictionaries._AppModel['stim_pattern'] = stimulation
+        eit_3D = Image_EIT_3D_tetra(mesh, stimulation=stimulation, shape_ele='surface')
+        eit_3D.set_up()
+        Dictionaries._AppModel['Model'] = eit_3D
+
+
+        # host = '10.10.2.149'  # as both code is running on same pc
+        # port = 500  # socket server port number
+
+        # client_socket = socket.socket()  # instantiate
+        # client_socket.connect((host, port))  # connect to the server
+        # progress_callback.emit('Connect to device')
+        # Dictionaries._AppVars['Device active'] = 1
+        # message = Dictionaries._AppNotifications['Active Device'][Dictionaries._AppVars['Language']]
+        # self.tui.update_message_box(new_message=message)
+        message = json.dumps(dictionary)
+        Dictionaries._AppVars['message'] = message
+        # client_socket.sendall(message.encode('utf-8'))
+        #
+        # while True:
+        #
+        #     print('connection from', host)
+        #
+        #     # Receive the data in small chunks and retransmit it
+        #     total_frame = ''
+        #     progress_callback.emit('Get data frame')
+        #     while True:
+        #         data = client_socket.recv(9535)
+        #         try:
+        #             if data.decode()[-1] != '}':
+        #                 total_frame += data.decode('utf-8')
+        #             else:
+        #                 total_frame += data.decode('utf-8')
+        #                 self.Voltages_from_json(total_frame)
+        #                 self.buttonReconstructionClick()
+        #
+        #                 break # show in terminal
+        #         except:
+        #             zero = 0
+        #         message = 'Kolejna ramka'
+        #         client_socket.sendall(message.encode('utf-8'))
+        #
+        #     # message = input(" -> ")  # again take input
+        #
+        # client_socket.close()  # close the connection
+        # return "Finished recon"
+
+
+        # host = socket.gethostname()  # as both code is running on same pc
+        # port = 5000  # socket server port number
+        #
+        # client_socket = socket.socket()  # instantiate
+        # client_socket.connect((host, port))  # connect to the server
+        #
+        # message = input(" -> ")  # take input
+        # while True:
+        #     # Create a TCP/IP socket
+        #     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #
+        #     # Connect the socket to the port where the server is listening
+        #     server_address = (socket.gethostname(), 10000)
+        #     print('connecting to %s port %s' % server_address)
+        #     sock.connect(server_address)
+        #     try:
+        #
+        #         # Send data
+        #         message = json.dump(dictionary)
+        #         print('sending "%s"' % message)
+        #         sock.sendall(message.encode('utf-8'))
+        #
+        #         # Send data
+        #         message = 'This is the message.  It will be repeated.'
+        #         print('sending "%s"' % message)
+        #         sock.sendall(message.encode('utf-8'))
+        #
+        #     finally:
+        #         print('closing socket')
+        #         sock.close()
+
+        # if self.tui.widgets.LineEdit_int_frame.value()
+        # dictionary['payload'] = dict(['start', 'live', 'serie'], [True, ])
+        # {
+        #     "sequence": { },
+        #     "payload": {
+        #         "start": "true",
+        #         "live": "true",
+        #         "serie": 0}
+        # }
+
+
+
+    def Voltages_from_json(self, total_frame_str):
+        V = total_frame_str
+        # podział na wiersze
+        dataW = V.split("\"], [\"")
+        # podział na kolumny
+        dataWC = [x.split("\", \"") for x in dataW]
+        dataWC[0][0] = dataWC[0][0].split("[[\"")[1]
+        dataWC[-1][-1] = dataWC[-1][-1].split("\"]]")[0]
+        data_array = np.row_stack([*dataWC])
+        # rzutowanie na inty i reshape to correct shape
+        voltages = np.array([int(data_array[x, y], 16) for x in range(data_array.shape[0]) for y in range(data_array.shape[1])]).reshape(data_array.shape)
+        Dictionaries._AppModel['raw_data'] = voltages
+
+        self.tui.new_page.meas_page.model._data = voltages[:, 3:3+32]
+        self.change_colorMap()
+
+        pass
 
     def buttonClick(self):
 
@@ -522,6 +782,25 @@ class MainWindow(QMainWindow):
 
         # print btn name
         # print(f'Button "{btnName}" pressed!')
+
+    def languageButtonClick(self):
+
+        btn = self.sender()  # get button
+        btnName = btn.objectName()  # pass button name
+
+        # change language to english
+        if btnName == "btnLangEnglish":
+            Dictionaries._AppVars['Language'] = 0
+            self.tui.retranslate_tui(self)
+
+        # change language to polish
+        if btnName == "btnLangPolish":
+            Dictionaries._AppVars['Language'] = 1
+            self.tui.retranslate_tui(self)
+
+        # send info to infoBar
+        self.tui.update_message_box(
+            new_message=Dictionaries._AppNotifications['LanguageChange'][Dictionaries._AppVars['Language']] )
 
     def change_colorMap(self):
         cmap_str = self.tui.new_page.meas_page.Set_of_colorMap.currentText()
@@ -601,11 +880,10 @@ class MainWindow(QMainWindow):
 
         dlg.close()
 
-        str_message = 'Visualization saved to ' + path
+        str_message = Dictionaries._AppNotifications['Save Visualization'][Dictionaries._AppVars['Language']] + path
 
-        self.tui.new_page.reconstruction_page.Info_box.moveCursor(QTextCursor.Start)
-        self.tui.new_page.reconstruction_page.Info_box.insertPlainText(str_message + '\n')
-        self.tui.new_page.reconstruction_page.Info_box.moveCursor(QTextCursor.Start)
+        self.tui.update_message_box(new_message=str_message)
+
 
 
 
@@ -642,14 +920,19 @@ class MainWindow(QMainWindow):
 
 
     def buttonReconstructionClick(self):
-        worker = Worker(self.tui.solve_inverse_problem)
+
+        if Dictionaries._AppVars['Device active'] == 0:
+            worker = Worker(self.tui.solve_inverse_problem)
+        else:
+            worker = Worker(self.tui.solve_inverse_problem_device)
         worker.signals.progress.connect(self.reconstruction_progress)
         worker.signals.result.connect(self.reconstruction_results)
         worker.signals.finished.connect(self.thread_complete)
         self.threadpool.start(worker)
 
     def thread_complete(self):
-        print('Dane')
+        self.tui.update_message_box(new_message='Dane')
+        Dictionaries._AppVars['recon_dane'] = True
 
     def buttonModelClick(self):
         # btn = self.sender()

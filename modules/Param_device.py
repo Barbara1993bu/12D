@@ -107,14 +107,60 @@ class nxQTimeEdit(QTimeEdit):
         self.noneFocused.emit()
 
 
+class SliderAmp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        # Tworzenie obiektu suwaka
+        self.slider = QSlider(Qt.Horizontal, self)
+        self.slider.setFocusPolicy(Qt.NoFocus)  # Opcjonalnie, aby suwak nie miał fokusu
+
+        # Ustawianie zakresu wartości suwaka
+        self.slider.setMinimum(300)
+        self.slider.setMaximum(10000)
+        self.slider.setPageStep(10)
+
+        # Ustawianie początkowej wartości suwaka
+        self.slider.setValue(300)
+
+        # Tworzenie etykiety
+        self.label = QLabel(str(self.slider.value()) + '\u03BCA', self)
+        self.label.setGeometry(QRect(0, -30, 40, 20))  # Ustawienie pozycji etykiety
+
+        # Podpinanie sygnałów zmiany wartości suwaka do metod
+        self.slider.valueChanged[int].connect(self.onSliderChange)
+        self.slider.sliderMoved[int].connect(self.onSliderMove)
+
+        # Tworzenie układu pionowego i dodawanie suwaka oraz etykiety do niego
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.slider)
+        self.layout.addWidget(self.label)
+
+        self.setLayout(self.layout)
+        # self.setWindowTitle('Slider Example')
+        self.show()
+
+    def onSliderChange(self, value):
+        self.label.setText(str(value) + '\u03BCA')  # Aktualizacja wartości etykiety po zmianie suwaka
+
+    def onSliderMove(self, value):
+        self.label.move(value * (self.slider.width() - self.label.width()) / self.slider.maximum(), -30)  # Aktualizacja pozycji etykiety wraz z ruchem suwaka
+
+
+
+
+
 class param_page(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setStyleSheet(u"b")
         # Layout reconstruction EIT
         self.widgets = QFrame(self)
-        self.widgets.setBaseSize(700, 700)
-        self.widgets.setMaximumSize(700, 700)
+        # self.widgets.setBaseSize(700, 700)
+        self.widgets.setMinimumSize(500,500)
+        self.widgets.setMaximumSize(700, 1000)
         self.widgets.setObjectName(u"widgets")
         self.widgets.setStyleSheet(u"b")
 
@@ -200,8 +246,15 @@ class param_page(QWidget):
         self.LineEdit_interval_frame = nxQDoubleSpinBox()
         self.LineEdit_interval_frame.setValue(3)
         self.LineEdit_interval_frame.setRange(3, 5000)
+        self.Label_interval_unit = QLabel(self.Frame_interval_frame)
+        self.Label_interval_unit.setMaximumSize(50, 50)
+        self.Label_interval_unit.setStyleSheet("color: black;"
+                                                "font-size: 15px")
         self.Layout_interval_frame.addWidget(self.Label_interval_frame)
         self.Layout_interval_frame.addWidget(self.LineEdit_interval_frame)
+        self.Layout_interval_frame.addWidget(self.Label_interval_unit)
+        self.Label_interval_unit.setText('\u03BCs')
+
 
         self.vertLayoutWidgets.addWidget(self.Frame_interval_frame)
 
@@ -215,13 +268,15 @@ class param_page(QWidget):
         self.Label_amp.setStyleSheet("color: black;"
                                      "font: bold;"
                                      "font-size: 15px")
-        self.Slider_amp = QSlider(Qt.Horizontal)
-        self.Slider_amp.setMaximumSize(500, 50)
-
-        self.Slider_amp.setMinimum(300)
-        self.Slider_amp.setMaximum(10000)
-        self.Slider_amp.setPageStep(10)
-        self.Slider_amp.setValue(300)
+        # self.Slider_amp = ValueSlider(Qt.Horizontal)
+        self.Slider_amp = SliderAmp()
+        # self.Slider_amp = QSlider(Qt.Horizontal)
+        # self.Slider_amp.setMaximumSize(500, 50)
+        #
+        # self.Slider_amp.setMinimum(300)
+        # self.Slider_amp.setMaximum(10000)
+        # self.Slider_amp.setPageStep(10)
+        # self.Slider_amp.setValue(300)
         self.Layout_amp.addWidget(self.Label_amp)
         self.Layout_amp.addWidget(self.Slider_amp)
 
@@ -242,3 +297,44 @@ class param_page(QWidget):
         self.Layout_int_frame.addWidget(self.LineEdit_int_frame)
 
         self.vertLayoutWidgets.addWidget(self.Frame_int_frame)
+
+        self.Frame_btn_send_param = QFrame(self.widgets)
+        self.Frame_btn_send_param.setMinimumSize(400, 50)
+        self.Frame_btn_send_param.setMaximumSize(500, 300)
+        self.Layout_btn_send_param = QHBoxLayout(self.Frame_btn_send_param)
+        self.Frame_btn_send_param.setLayout(self.Layout_btn_send_param)
+        self.btn_send_params = QPushButton(self.Frame_btn_send_param)
+        self.btn_send_params.setMinimumSize(200, 50)
+        self.btn_send_params.setStyleSheet(u"QPushButton {\n"
+                                           "	background-color: rgb(147, 186, 249);\n"
+                                           "background-repeat: no-repeat;\n"
+                                           "border-radius: 10px;\n"
+                                           "font-size: 15px;\n"
+                                           "}\n"
+                                           "QPushButton:hover {\n"
+                                           "	background-color: rgb(147, 186, 249);\n"
+                                           "}\n"
+                                           "QPushButton:pressed {	\n"
+                                           "	background-color: rgb(40,40,250);\n"
+                                           "}")
+        self.Layout_btn_send_param.addWidget(self.btn_send_params)
+
+        self.btn_STOP = QPushButton(self.Frame_btn_send_param)
+        self.btn_STOP.setMinimumSize(100, 50)
+        self.btn_STOP.setStyleSheet(u"QPushButton {\n"
+                                    "	background-color: rgb(147, 186, 249);\n"
+                                    "background-repeat: no-repeat;\n"
+                                    "border-radius: 10px;\n"
+                                    "font-size: 15px;\n"
+                                    "}\n"
+                                    "QPushButton:hover {\n"
+                                    "	background-color: rgb(147, 186, 249);\n"
+                                    "}\n"
+                                    "QPushButton:pressed {	\n"
+                                    "	background-color: rgb(40,40,250);\n"
+                                    "}")
+        self.btn_STOP.setText('STOP')
+        self.btn_STOP.setEnabled(False)
+        self.Layout_btn_send_param.addWidget(self.btn_STOP)
+
+        self.vertLayoutWidgets.addWidget(self.Frame_btn_send_param)

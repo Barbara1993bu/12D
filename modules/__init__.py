@@ -14,7 +14,9 @@ from . Laplace_regularization import *
 
 from . data_frames_preprocessing import *
 
-from . class_EIT_3D_1 import Image_EIT_3D_tetra
+from . class_EIT_3D_1 import *
+
+from . setting_page import *
 
 from . load_mesh import *
 from . Grid_Page import *

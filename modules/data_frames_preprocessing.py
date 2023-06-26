@@ -114,6 +114,96 @@ def load_data_from_HT1( file_name ):
     return HT_data
 
 
+def get_data_from_array( raw_data, electrodes=None):
+    if np.all(np.isnan(raw_data[:, -1])): raw_data = np.delete(raw_data, -1, 1)
+
+    indices_NaN = np.argwhere(np.isnan(raw_data[:, 0]))
+
+    if (indices_NaN.size != 0): raw_data = raw_data[: np.min(indices_NaN)].copy()
+
+    raw_data = np.delete(raw_data, raw_data[:, 0] == 0, 0)
+
+    if (raw_data.size == 0): raise Exception("File: '" + file_name + "' is not valid.")
+
+    integer_type = np.int_
+
+    injection_electrodes = np.asarray(raw_data[:, 1: 3], dtype=integer_type)
+
+    N_max = np.max(injection_electrodes) + 1
+
+    if (electrodes == None): electrodes = np.arange(0, N_max, 1, dtype=integer_type)
+
+    electrodes = np.unique(np.reshape(np.asarray(electrodes, dtype=integer_type), -1))
+
+    if (np.all(np.isin(electrodes, np.arange(0, N_max, 1, dtype=integer_type))) == False): raise ValueError(
+        "Array 'electrodes' is not valid.")
+
+    N = electrodes.size
+
+    indices = np.arange(0, N, 1, dtype=integer_type)
+
+    map_object = dict(zip(electrodes, indices))
+
+    select_excitations = np.all(np.isin(injection_electrodes, electrodes), axis=1)
+
+    injection_electrodes = np.array([[map_object[e] for e in IE] for IE in injection_electrodes[select_excitations, :]],
+                                    dtype=integer_type)
+
+    float_type = np.float_
+
+    currents = np.asarray(raw_data[select_excitations, 0], dtype=float_type)
+
+    voltages_gnd = np.asarray(raw_data[np.ix_(select_excitations, electrodes + 3)], dtype=float_type)
+
+    electrodes_P = np.roll(indices, -1)
+
+    electrodes_M = indices
+
+    is_included = [np.any(np.isin(np.column_stack((electrodes_P, electrodes_M)), IE), axis=1) == False for IE in
+                   injection_electrodes]
+
+    measurement_electrodes_P = [electrodes_P[L] for L in is_included]
+    measurement_electrodes_M = [electrodes_M[L] for L in is_included]
+
+    voltages = [np.reshape(U[ME_P] - U[ME_M], (-1, 1)) for U, ME_P, ME_M in
+                zip(voltages_gnd, measurement_electrodes_P, measurement_electrodes_M)]
+
+    voltages = np.vstack(voltages)
+
+    stim_pattern = [sp.csr_matrix(([I, -I], ([0, 0], IE)), shape=(1, N), dtype=float_type) for IE, I in
+                    zip(injection_electrodes, currents)]
+
+    rows = [np.arange(0, np.sum(L), 1, dtype=integer_type) for L in is_included]
+
+    meas_pattern_P = [sp.csr_matrix((np.ones_like(R), (R, ME_P)), shape=(R.size, N), dtype=integer_type) for ME_P, R in
+                      zip(measurement_electrodes_P, rows)]
+    meas_pattern_M = [sp.csr_matrix((np.ones_like(R), (R, ME_M)), shape=(R.size, N), dtype=integer_type) for ME_M, R in
+                      zip(measurement_electrodes_M, rows)]
+
+    meas_pattern = [P - M for P, M in zip(meas_pattern_P, meas_pattern_M)]
+
+    HT_data = {}
+
+    # HT_data['file_name'] = file_name
+
+    HT_data['electrodes'] = electrodes
+
+    HT_data['raw_data'] = raw_data
+
+    HT_data['injection_electrodes'] = injection_electrodes
+
+    HT_data['is_included'] = is_included
+
+    HT_data['measurement_electrodes'] = [{-1: ME_M, 1: ME_P} for ME_P, ME_M in
+                                         zip(measurement_electrodes_P, measurement_electrodes_M)]
+
+    HT_data['stimulation'] = {'stim_pattern': stim_pattern, 'meas_pattern': meas_pattern}
+
+    HT_data['voltages'] = voltages
+
+    return HT_data
+
+
 def load_data_from_HT2( file_name, electrodes = None ):
     
     raw_data = read_csv( file_name, sep = ';', header = None ).to_numpy( )

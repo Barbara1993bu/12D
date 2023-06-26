@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 import os
+import time
+import json
 
 # from PySide2.QtCore import *
 import PySide2
@@ -232,6 +234,7 @@ class tui_MainWindow(object):
 
         MainWindow.resize(1920, 1080)
         MainWindow.setMinimumSize(QSize(1920, 1080))
+        self.threadpool = QThreadPool()
 
         # -----------------------------------------
         # styles and background
@@ -730,36 +733,7 @@ class tui_MainWindow(object):
 
         # -----------------------------------------
         # Setting Frame
-        self.setting_page = QWidget()
-        self.setting_page.setObjectName(u"setting_page")
-
-        self.vertLayoutNewPage = QVBoxLayout(self.setting_page)
-        self.vertLayoutNewPage.setObjectName(u"vertLayoutNewPage")
-
-        # self.label = QLabel(self.setting_page)
-        # self.label.setObjectName(u"label")
-        # self.label.setAlignment(Qt.AlignCenter)
-        # self.label.setText("Settings")
-
-        # attach label widget to new page layout
-        self.vertLayoutNewPage.addWidget(QLabel("Settings"))
-
-        # button for english
-        self.btnLangEnglish = QPushButton()#QIcon(u":/images/images/polishflag.svg"),"")
-        self.btnLangEnglish.setObjectName(u"btnLangEnglish")
-        self.btnLangEnglish.setSizePolicy(sizePolicy)
-        self.btnLangEnglish.setMinimumSize(QSize(125, 50))
-        self.btnLangEnglish.setMaximumSize(QSize(200, 100))
-        self.btnLangEnglish.setFont(font)
-        self.btnLangEnglish.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btnLangEnglish.setLayoutDirection(Qt.LeftToRight)
-        self.btnLangEnglish.setStyleSheet(u"background-image: url(:/images/images/polishflag.svg);")
-
-        self.vertLayoutNewPage.addWidget(self.btnLangEnglish)
-
-        self.btnLangPolish = QPushButton(self.setting_page)
-
-        self.vertLayoutNewPage.addWidget(self.btnLangPolish)
+        self.setting_page = setting_page()
 
         # attach new page to stacked widgets
         self.stackedWidget.addWidget(self.setting_page)
@@ -889,6 +863,53 @@ class tui_MainWindow(object):
         self.vertLayoutCentralFrame.addWidget(self.content)
 
         # end of the right frame definition
+        # -----------------------------------------
+
+        # -----------------------------------------
+        # definition of info bar bottom bar
+        # -----------------------------------------
+        # bottom bar
+        self.infoBar = QFrame(self.contentCentralFrame)
+        self.infoBar.setObjectName(u"infoBar")
+        self.infoBar.setMinimumSize(QSize(0, 50))
+        self.infoBar.setMaximumSize(QSize(100000, 50))
+        self.infoBar.setFrameShape(QFrame.NoFrame)
+        self.infoBar.setFrameShadow(QFrame.Raised)
+
+        # horizontal layout
+        self.horizLayoutInfoBar = QHBoxLayout(self.infoBar)
+        self.horizLayoutInfoBar.setSpacing(0)
+        self.horizLayoutInfoBar.setObjectName(u"horizLayoutInfoBar")
+        self.horizLayoutInfoBar.setContentsMargins(0, 0, 0, 0)
+
+        # create message box
+        self.message_box = QTextEdit(self.infoBar)
+        self.message_box.setObjectName(u"message_box")
+        self.message_box.setStyleSheet(u"color: white;"
+                                       u" border: 0px solid rgb(90,90,250);"
+                                       u" background-color: transparent;")
+        self.message_box.setMinimumSize(QSize(0, 50))
+        self.message_box.setMaximumSize(QSize(100000, 50))
+        message_box_font = QFont()
+        message_box_font.setFamily(u"Segoe UI Light")
+        message_box_font.setPointSize(18)
+        message_box_font.setBold(False)
+        message_box_font.setItalic(False)
+        self.message_box.setFont(message_box_font)
+        # add init empty space
+        self.message_box.insertPlainText("  ")
+        self.message_box.setTextCursor(QTextCursor(self.message_box.document()))
+        self.message_box.moveCursor(QTextCursor.Start)
+        # forbid text input
+        self.message_box.setDisabled(True)
+
+        # attach message box to the frame
+        self.horizLayoutInfoBar.addWidget(self.message_box)
+
+        # add info bar to application frame
+        self.vertLayoutContainer.addWidget(self.infoBar)
+
+        # end of the info bar
         # -----------------------------------------
 
 
@@ -1046,6 +1067,9 @@ class tui_MainWindow(object):
         self.btn_widgets.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Widgets'][Dictionaries._AppVars['Language']], None))
 
+        self.setting_page.Label_language.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Language'][Dictionaries._AppVars['Language']], None))
+
         self.widgets.Label_tryb.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Tryb'][Dictionaries._AppVars['Language']], None))
         self.widgets.Label_stim_pattern.setText(QCoreApplication.translate("MainWindow",
@@ -1058,6 +1082,9 @@ class tui_MainWindow(object):
             Dictionaries._AppLang['Amp'][Dictionaries._AppVars['Language']], None))
         self.widgets.Label_int_frame.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Int frame'][Dictionaries._AppVars['Language']], None))
+        self.widgets.btn_send_params.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Send param'][Dictionaries._AppVars['Language']], None))
+
 
         self.btn_new.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['EIT 3D'][Dictionaries._AppVars['Language']], None))
@@ -1107,9 +1134,11 @@ class tui_MainWindow(object):
             Dictionaries._AppLang['Method of reconstruction'][Dictionaries._AppVars['Language']], None))
 
         self.new_page.reconstruction_page.Method_of_reconstruction.addItems(['Tikhonov', 'Gausse-Newton', 'Kotre',
-                                                'Marquardt-Levenberg', 'Total Variation'])
+                                                'Marquardt-Levenberg', 'Total Variation', 'Elasticnet'])
         self.new_page.reconstruction_page.btn_reconstruction.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Reconstruction EIT'][Dictionaries._AppVars['Language']], None))
+        self.new_page.reconstruction_page.btn_reconstruction_device.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Reconstruction EIT from device'][Dictionaries._AppVars['Language']], None))
         self.new_page.reconstruction_page.label_txt_number_of_iteration.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Number of iteration'][Dictionaries._AppVars['Language']], None))
         self.new_page.reconstruction_page.qdial_number_of_iteration.setMinimum(1)
@@ -1141,7 +1170,7 @@ class tui_MainWindow(object):
             Dictionaries._AppLang['Visualization voltages'][Dictionaries._AppVars['Language']], None))
         self.new_page.grid_page.btn_saveVis.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Save Visualization'][Dictionaries._AppVars['Language']], None))
-        self.new_page.grid_page.btn_saveVis.setEnabled(False)
+
         # I = pg.ImageItem()
         # Maska = pg.ImageItem()
         # stimulation = {
@@ -1185,6 +1214,47 @@ class tui_MainWindow(object):
         # self.msgRestartBox.setText("Czy chcesz zrestartować aplikację AAAAAAA ")
 
 
+    def disable_enable_all_buttons_for_multithreading(self, make_active = True):
+
+        # self.btn_refresh_eit_reconstruction.setEnabled(make_active)
+
+        pass
+
+
+    def disable_enable_language_buttons_for_multithreading(self, make_active):
+
+        self.setting_page.btnLangEnglish.setEnabled(make_active)
+        self.setting_page.btnLangPolish.setEnabled(make_active)
+
+    # update info box
+    def update_message_box(self, new_message):
+
+        self.disable_enable_language_buttons_for_multithreading(make_active=False)
+
+        self.message_box.clear()
+        self.infoBar.setStyleSheet("background:rgb(230,100,7)")
+        self.message_box.moveCursor(QTextCursor.Start)
+        self.message_box.insertPlainText(str(datetime.now().strftime('%H:%M:%S'))
+                                             + " - Info: "
+                                             + new_message)
+
+        # run worker - it restores the info box to the previous state and look
+        worker = Worker(self.waiting_process)
+        worker.signals.finished.connect(self.clear_infoBar)
+
+
+        # execute worker
+        self.threadpool.start(worker)
+
+
+    def waiting_process(self, progress_callback):
+        time.sleep(1.25)
+
+
+    def clear_infoBar(self):
+        self.message_box.clear()
+        self.infoBar.setStyleSheet("background:rgb(90,90,250)")
+        self.disable_enable_language_buttons_for_multithreading(make_active=True)
     # def btn_widgetsMouseMoveEvent(self, event):
     #     print('jestem na zakladce widgets')
     #     self.keyboardwidget.setSource(QUrl.fromLocalFile("src/keyboard.qml"))
@@ -1193,6 +1263,115 @@ class tui_MainWindow(object):
     # def btn_newMouseMoveEvent(self, event):
     #     print('jestem na zakladce new_page')
     #     self.keyboardwidget.setSource(QUrl.fromLocalFile("src/empty.qml"))
+
+    def solve_inverse_problem_device(self, progress_callback):
+        progress_callback.emit('Loading Model')
+        eit_3D = Dictionaries._AppModel['Model']
+        max_iterations = int(self.new_page.reconstruction_page.qdial_number_of_iteration.value())
+        alpha = float(self.new_page.reconstruction_page.QcomboBox_regularyzation_parameter.currentText())
+        method = self.new_page.reconstruction_page.Method_of_reconstruction.currentText()
+        raw_data = Dictionaries._AppModel['raw_data']
+        HT_data = get_data_from_array(raw_data)
+        data_frame_full = {'stimulation': HT_data['stimulation'], 'voltages': HT_data['voltages']}
+
+        DFs = separate_EIT_data_frame(data_frame_full)
+
+        if ('message' in DFs):
+            data_frame = data_frame_full
+
+        else:
+            data_frame = {'stimulation': DFs['stimulation'], 'voltages': DFs['voltages_P']}
+        progress_callback.emit('Defined preliminary variables')
+
+        eit_3D.up_grade_value_elems(np.ones_like(eit_3D.value_elems))
+
+        U_ref = eit_3D.simulation()
+
+        voltage_factor = np.linalg.norm(data_frame['voltages']) / np.linalg.norm(U_ref)
+
+        U = (1.0 / voltage_factor) * data_frame['voltages']
+        Dictionaries._AppModel['U1'] = U
+        if (type(alpha).__name__ != 'float'): raise TypeError("Parameter 'alpha' is not valid.")
+
+        if (alpha <= 0): raise ValueError("Parameter 'alpha' is not valid.")
+
+
+        eit_3D.profiler['reconstruction_gn'] = True
+
+        max_iterations = int(max_iterations)
+
+        if (max_iterations < 1): raise ValueError("Parameter 'max_iterations' is not valid.")
+
+        progress_callback.emit('Calculate reconstruction')
+
+        # ['Tikhonov', 'Damp_Newton', 'Kotre',
+        #  'Marquardt-Levenberg', 'Total Variation', 'Elasticnet']
+        if method == 'Gausse-Newton' or method == 'Total Variation':
+
+            R = matrix_laplacea(eit_3D.elems, eit_3D.nodes, 'tetra')
+
+            RtR = (R.T @ R).toarray()
+
+            RtR = RtR.astype(np.float_)
+
+            eit_3D.change_ms_inv(lamb=alpha, RtR=RtR)
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+        if method == 'Tikhonov':
+            eit_3D.change_ms_inv(lamb=alpha, method='dgn')
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+        if method == 'Marquardt-Levenberg':
+            eit_3D.change_ms_inv(lamb=alpha, method='lm')
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+
+        if method == 'Kotre':
+            eit_3D.change_ms_inv(lamb=alpha, method='kotre')
+            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            U2 = eit_3D.fs
+
+        if method == 'Elasticnet':
+            parametry = json.load(open(r'modules\EIT_3D_kolo_parametry_elast.json'))
+            parametry.keys()
+            par = parametry['wspolczynniki']
+            par = np.array(par)
+            rec = par @ np.vstack((np.array([1]), U.reshape(-1, 1)))
+            eit_3D.up_grade_value_elems(rec.reshape(-1))
+            U2 = eit_3D.simulation()
+
+        sigma = copy.deepcopy(eit_3D.value_elems)
+
+        sigma[sigma < 1.0E-5] = 1.0E-5
+
+        eit_3D.up_grade_value_elems(sigma)
+
+        V = vars(copy.deepcopy(eit_3D))
+
+        V['HT_data'] = HT_data
+        V['method'] = method
+
+        # V = vars(copy.deepcopy(V))
+        for k in V.keys():
+            try:
+                V[k] = getattr(eit_3D, k)
+            except:
+                zero = 0
+
+        if not os.path.exists('data'):
+            os.makedirs('data')
+
+        TimeLabel = datetime.now().strftime("%H-%M-%S_%d-%m-%Y")
+
+        np.savez('data\\reconstruction_' + TimeLabel, np.array(V))
+
+        Dictionaries._AppModel['U2'] = U2
+        self.printVoltages()
+
+
+        return eit_3D
+
+        pass
 
 
     def solve_inverse_problem(self, progress_callback):
@@ -1247,6 +1426,7 @@ class tui_MainWindow(object):
         voltage_factor = np.linalg.norm(data_frame['voltages']) / np.linalg.norm(U_ref)
 
         U = (1.0 / voltage_factor) * data_frame['voltages']
+        Dictionaries._AppModel['U1'] = U
 
 
         if (type(alpha).__name__ != 'float'): raise TypeError("Parameter 'alpha' is not valid.")
@@ -1289,6 +1469,15 @@ class tui_MainWindow(object):
             eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
             U2 = eit_3D.fs
 
+        if method == 'Elasticnet':
+            parametry = json.load(open(r'modules\EIT_3D_kolo_parametry_elast.json'))
+            parametry.keys()
+            par = parametry['wspolczynniki']
+            par = np.array(par)
+            rec = par @ np.vstack((np.array([1]), U.reshape(-1, 1)))
+            eit_3D.up_grade_value_elems(rec.reshape(-1))
+            U2 = eit_3D.simulation()
+
         sigma = copy.deepcopy(eit_3D.value_elems)
 
         sigma[sigma < 1.0E-5] = 1.0E-5
@@ -1314,7 +1503,7 @@ class tui_MainWindow(object):
 
         np.savez('data\\reconstruction_' + TimeLabel, np.array(V))
         self.EIT_reconstruction = eit_3D
-        Dictionaries._AppModel['U1'] = U
+
         Dictionaries._AppModel['U2'] = U2
         self.printVoltages()
 

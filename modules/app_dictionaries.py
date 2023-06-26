@@ -1,8 +1,11 @@
 
 class Dictionaries():
     _AppVars = {
-        'Language': 0,  # 0-English, 1-Polish,
+        'Language': 1,  # 0-English, 1-Polish,
+        'Device active': 0,
+        'recon_dane': False,
     }
+
     _AppModel = {
         'Model': 0,
         'U1': [],
@@ -14,6 +17,8 @@ class Dictionaries():
         'value_y': [],
         'value_z': [],
         'fig_slices': [],
+        'stim_pattern': [],
+        'raw_data': [],
     }
 
     _AppLang = {
@@ -25,12 +30,14 @@ class Dictionaries():
         'Hide': ['Hide', 'Ukryj'],
         'Home': ['Home', 'Start'],
         'Widgets': ['Widgets', 'Widżety'],
+        'Language': ['Language', 'Język'],
         'Tryb': ['Type', 'Tryb'],
         'Stim': ['Stim pattern', 'Wzorzec stymulacji'],
         'Freq': ['Frequency', 'Częstotliwość'],
         'Interval frame': ['Interval frame', 'Interwał między ramkami'],
         'Amp': ['Amp', 'Amp'],
         'Int frame': ['No. frame', 'Liczba ramek'],
+        'Send param': ['Send param', 'Wyślij parametry'],
 
         'EIT 3D': ['EIT 3D', 'EIT 3D'],
         'Visualisation': ['Vis. slices', 'Wiz. przekrojów'],
@@ -50,6 +57,7 @@ class Dictionaries():
         'Voltages EIT': ['Voltages EIT', 'Pomiary EIT'],
         'Number of iteration': ['Number of iteration', 'Liczba iteracji'],
         'Reconstruction EIT': ['Reconstruction EIT', 'Rekonstrucja EIT'],
+        'Reconstruction EIT from device': ['Reconstruction EIT from device', 'Rekonstrucja EIT z urządzenia'],
         'Regularyzation Parameter': ['Regularyzation Parameter', ' Parametr regualryzacji'],
         'Slice plane x = ': ['Slice plane x = ', 'Przekrój płaszczyzną x = '],
         'Slice plane y = ': ['Slice plane y = ', 'Przekrój płaszczyzną y = '],
@@ -58,4 +66,16 @@ class Dictionaries():
         'Save Visualization': ['Save Vis', 'Zapisz wiz'],
         'Color map': ['Color map', 'Mapa kolorów']
 
+    }
+    _AppNotifications = {
+        'LanguageChange': ['Language changed to English.', 'Język zmieniono na Polski.'],
+        'Save Visualization': ['Visualization saved to ', 'Wizualizację zapisano do pliku '],
+        'Active Device': ['Davice is conected', 'Użądzenie zostało podłączone'],
+        'TEST': ['TEST', 'TEST'],
+        'TEST': ['TEST', 'TEST'],
+        'TEST': ['TEST', 'TEST'],
+        'TEST': ['TEST', 'TEST'],
+        'TEST': ['TEST', 'TEST'],
+        'TEST': ['TEST', 'TEST'],
+        'TEST': ['TEST', 'TEST'],
     }

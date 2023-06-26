@@ -193,6 +193,7 @@ class grid_page(QWidget):
         SaveIcon.addFile(u":/icons/images/icons/download.svg", QSize(), QIcon.Normal, QIcon.Off)
         self.btn_saveVis.setIcon(SaveIcon)
         self.btn_saveVis.setIconSize(QSize(40, 40))
+        self.btn_saveVis.setEnabled(False)
 
         # self.btn_saveVis.setFlat(True)
         self.grid_layout.addWidget(self.Frame_saveVis, 0, 0)
