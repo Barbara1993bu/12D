@@ -298,6 +298,24 @@ class param_page(QWidget):
 
         self.vertLayoutWidgets.addWidget(self.Frame_int_frame)
 
+        self.Frame_Live_check_box = QFrame(self.widgets)
+        # self.Frame_Live_check_box.setMinimumSize(200, 50)
+        self.Frame_Live_check_box.setMaximumSize(200, 50)
+        self.Layout_Live_check_box = QHBoxLayout(self.Frame_Live_check_box)
+        self.Frame_Live_check_box.setLayout(self.Layout_Live_check_box)
+        self.Live_check_box = QCheckBox(self.Frame_Live_check_box)
+
+        self.Text_Live = QLabel(self.Frame_Live_check_box)
+        self.Text_Live.setStyleSheet("color: black;"
+                                     "font: bold;"
+                                     "font-size: 15px")
+
+        self.Layout_Live_check_box.addWidget(self.Text_Live)
+        self.Layout_Live_check_box.addWidget(self.Live_check_box)
+
+        self.vertLayoutWidgets.addWidget(self.Frame_Live_check_box)
+
+
         self.Frame_btn_send_param = QFrame(self.widgets)
         self.Frame_btn_send_param.setMinimumSize(400, 50)
         self.Frame_btn_send_param.setMaximumSize(500, 300)

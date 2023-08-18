@@ -4,6 +4,9 @@ class Dictionaries():
         'Language': 1,  # 0-English, 1-Polish,
         'Device active': 0,
         'recon_dane': False,
+        'live': 0,
+        'message': '',
+        'start_recon': False,
     }
 
     _AppModel = {
@@ -37,6 +40,7 @@ class Dictionaries():
         'Interval frame': ['Interval frame', 'Interwał między ramkami'],
         'Amp': ['Amp', 'Amp'],
         'Int frame': ['No. frame', 'Liczba ramek'],
+        'Live': ['Live', 'Live'],
         'Send param': ['Send param', 'Wyślij parametry'],
 
         'EIT 3D': ['EIT 3D', 'EIT 3D'],
@@ -71,6 +75,13 @@ class Dictionaries():
         'LanguageChange': ['Language changed to English.', 'Język zmieniono na Polski.'],
         'Save Visualization': ['Visualization saved to ', 'Wizualizację zapisano do pliku '],
         'Active Device': ['Davice is conected', 'Użądzenie zostało podłączone'],
+        'Send param device': ['Send param device', 'Wysyłam parametry urządzenia'],
+        'Send param frames': ['Send param frames', 'Wysyłam parametry ramki'],
+        'Recive frame': ['Recive frame', 'Odbieram ramkę danych'],
+        'Recon': ['Do reconstruction', 'Przystępuję do rekocstrukcji'],
+        'Recon dane': ['Reconstruction done', 'Rekonstrukcja wykonana'],
+        'Recon n done': ['All frames reconstruction', 'Wszystkie ramki zrekonstruowane'],
+        'Connection field': ['Connection field', 'Nieudane połączenie'],
         'TEST': ['TEST', 'TEST'],
         'TEST': ['TEST', 'TEST'],
         'TEST': ['TEST', 'TEST'],

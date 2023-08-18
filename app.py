@@ -5,6 +5,8 @@ from datetime import datetime
 import numpy as np
 from PySide2.QtWidgets import QApplication
 from PySide2.QtCore import QTimer
+from PySide2.QtNetwork import *
+
 import sys
 import os
 import platform
@@ -18,6 +20,8 @@ import cv2
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 # matplotlib.use('QtAgg')
 import socket
+from threading import Thread
+from contextlib import contextmanager
 import sys
 import PySide2
 import multiprocessing
@@ -39,6 +43,7 @@ from datetime import datetime
 widgets = None
 
 os.environ["QT_IM_MODULE"] = "qtvirtualkeyboard"
+
 
 class WorkerSignals(QObject):
     '''
@@ -108,6 +113,38 @@ class Worker(QRunnable):
             self.signals.result.emit(result)  # Return the result of the processing
         finally:
             self.signals.finished.emit()  # Done
+
+
+class ClientManager(QtCore.QObject):
+    def __init__(self, parent=None):
+        super(ClientManager, self).__init__(parent)
+        self._socket = QTcpSocket(self)
+        self._socket.stateChanged.connect(self.on_stateChanged)
+        self._socket.readyRead.connect(self.on_readyRead)
+        self._timer = QtCore.QTimer(self, interval=1000)
+        # self._timer.timeout.connect(self.sendMessage)
+
+    def launch(self, address=QHostAddress.Any, port=9999):
+        return self._socket.connectToHost(QHostAddress(address), port)
+
+    @QtCore.Slot(QAbstractSocket.SocketState)
+    def on_stateChanged(self, state):
+        if state == QAbstractSocket.ConnectedState:
+            self._timer.start()
+            print("connected")
+        elif state == QAbstractSocket.UnconnectedState:
+            print("disconnected")
+            QtCore.QCoreApplication.quit()
+
+    @QtCore.Slot()
+    def sendMessage(self, msg=''):
+        if self._socket.state() == QAbstractSocket.ConnectedState:
+            # msg = QtCore.QDateTime.currentDateTime().toString()
+            self._socket.write(msg)
+
+    @QtCore.Slot()
+    def on_readyRead(self):
+        return self._socket.readAll()
 
 # -----------------------------------------
 # define custom QMessageWindow
@@ -316,6 +353,24 @@ class SlicesDialog(QDialog):
         self.setLayout(self.layout)
 
 
+class ProgessDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.Layout = QVBoxLayout()
+        self.ProgressBar = QProgressBar()
+        self.Layout.addWidget(self.ProgressBar)
+
+        self.ProgressBar.setMaximum(100)
+        self.ProgressBar.setStyleSheet("QProgressBar {border: 2px solid grey;border-radius:8px;padding:1px}"
+                                       "QProgressBar::chunk {background:gray}")
+        self.ProgressBar.setValue(1)
+
+        def setProgressVal(val):
+            self.ProgressBar.setValue(val)
+
+
+
+
 
 
 
@@ -328,9 +383,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.clientname = "EITDevice"
-        self.host = '10.10.2.149'
-        self.port = 500
+        self.host = "10.10.2.84"
+        self.port = 32048
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # self.s = QTcpSocket()
 
         # # make app full-screen
         self.setWindowState(self.windowState() | Qt.WindowFullScreen)
@@ -484,57 +541,341 @@ class MainWindow(QMainWindow):
 
 
     def connection(self):
+        # MY_SERVER = (self.host, self.port)
+        # with tcp_connection_to(MY_SERVER) as conn:
+        #     conn.send(Dictionaries._AppVars['message'].encode())
         try:
+            # self.s.launch(self.host, self.port)
             self.s.connect((self.host, self.port))
             self.tui.widgets.btn_STOP.setEnabled(True)
             QMessageBox.warning(self, "Connection", "Connection made")
         except:
             print("Failed to connect with {}:{}" .format(self.host, self.port))
-        message = Dictionaries._AppVars['message']
-        self.s.sendall(message.encode())
+        Dictionaries._AppVars['Device active'] = 1
+
+
+    def receivemessage_live(self, progress_callback):
+        n_frame = self.tui.widgets.LineEdit_int_frame.value()
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+
+        while Dictionaries._AppVars['recon_dane'] == False:
+
+            try:
+                self.s.connect((self.host, self.port))
+                self.tui.widgets.btn_STOP.setEnabled(True)
+                # QMessageBox.warning(self, "Connection", "Connection made")
+                Dictionaries._AppVars['Device active'] = 1
+                total_frame = ''
+                t = 2  # dla samej ramiki danych jest 1 dla początkowych wartości jest 0
+                # message = Dictionaries._AppVars['message']
+                # wyślij ustawienia urządzenia
+                # print('Wysyłam')
+                # print(message.encode())
+                # self.s.sendall(message.encode())
+                # urządznie odsyła że zostało poprawnie skonfigurowane
+                # print('odbieram')
+                # data = self.s.recv(1024)
+
+                # data = data.data()
+                # print(data.decode())
+                # self.tui.update_message_box(new_message=data.decode())
+                while Dictionaries._AppVars['recon_dane'] == False:
+                # while Dictionaries._AppVars['recon_dane'] == False:
+                #     if t <= 1:
+                #         print('Wysyłam')
+                #         message = Dictionaries._AppVars['message']
+                #         if t == 0:
+                #             # M = Dictionaries._AppNotifications['Send param device'][Dictionaries._AppVars['Language']]
+                #             # progress_callback.emit(M)
+                #             # self.tui.update_message_box(new_message=M)
+                #             print('wysyłam ustawienia urządzenia')
+                #             meas_Dicit = json.loads(message.encode())
+                #             Keys = meas_Dicit['payload'].keys()
+                #
+                #             for k in Keys:
+                #                 new_message = {
+                #                     'sequence': {},
+                #                     'payload': {
+                #                         k: meas_Dicit['payload'][k]
+                #                     }
+                #                 }
+                #                 jm = json.dumps(new_message) + '\r\n'
+                #                 nr_prub = 0
+                #                 while nr_prub <= 3:
+                #                     self.s.sendall(jm.encode())
+                #                     data_recev = self.s.recv(1024)
+                #                     recev_Dicit = json.loads(data_recev.decode('utf-8'))
+                #                     nr_prub = 0
+                #                     if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+                #                         print(k + ' zaktualizowano')
+                #                         nr_prub = 10
+                #                     else:
+                #                         nr_prub += 1
+                #                         if nr_prub > 3:
+                #                             print('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+                #             print('ustawiono parametry urządzenia')
+                #             # self.tui.update_message_box(new_message='wysyłam ustawienia urządzenia')
+                #         else:
+                #             self.sendmessage_newFrame()
+                #             # print('Pobieram ustawienia ramki')
+                #             message = Dictionaries._AppVars['message']
+                #             # print('wysyłam ustawienia ramki')
+                #             # M = Dictionaries._AppNotifications['Send param frames'][Dictionaries._AppVars['Language']]
+                #             # self.tui.update_message_box(new_message=M)
+                #             # progress_callback.emit(M)
+                #
+                #             meas_Dicit = json.loads(message.encode())
+                #             Keys = meas_Dicit['payload'].keys()
+                #
+                #             for k in Keys:
+                #                 new_message = {
+                #                     'sequence': {},
+                #                     'payload': {
+                #                         k: meas_Dicit['payload'][k]
+                #                     }
+                #                 }
+                #                 jm = json.dumps(new_message) + '\r\n'
+                #                 nr_prub = 0
+                #                 while nr_prub <= 3:
+                #                     self.s.sendall(jm.encode())
+                #                     data_recev = self.s.recv(1024)
+                #                     recev_Dicit = json.loads(data_recev.decode('utf-8'))
+                #                     nr_prub = 0
+                #                     if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+                #                         print(k + ' zaktualizowano')
+                #                         nr_prub = 10
+                #                     else:
+                #                         nr_prub += 1
+                #                         if nr_prub > 3:
+                #                             print('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+                #             print('ustawiono parametry ramki')
+                #
+                #             # self.s.sendall(message.encode())
+                #
+                #     # time.sleep(2)
+                #     # print('Odbieram')
+                #
+                #     # self.tui.update_message_box(new_message='pobieram ramkę danych')
+                #     # time.sleep(2)
+                #
+                #     # if t == 0:
+                #     #     data = self.s.recv(1024)
+                #     #     print(data.decode())
+                #     #     # self.tui.update_message_box(new_message=data.decode())
+                #     #
+                #     else:
+                #         # print('Odbieram ramkę danych')
+                #
+                #         # while True:
+
+                    # if t == 1:
+                    #     message = {"sequence": {},
+                    #                "payload":
+                    #                    {"start": "1"}}
+                    #     jm = json.dumps(message)
+                    #     self.s.sendall(jm.encode())
+                    # else:
+                    data = self.s.recv(2067)
+
+                    total_str = data
+
+                    self.Voltages_from_json(total_str)
+                    self.buttonReconstructionClick()
+
+                    time.sleep(7)
+
+                    # Dictionaries._AppVars['message'] = jm
+                    if n_frame != 1 and t == n_frame:
+                        Dictionaries._AppVars['recon_dane'] = False
+                        self.STOP_device()
+                        message = Dictionaries._AppVars['message']
+                        self.s.sendall(message.encode())
+                        self.s.close()
+                        M = Dictionaries._AppNotifications['Recon n done'][Dictionaries._AppVars['Language']]
+                        progress_callback.emit(M)
+                        # self.tui.update_message_box(new_message=M)
+                        break
+
+                    t += 1
+
+
+            except:
+                print("Failed to connect with {}:{}".format(self.host, self.port))
 
 
     def receivemessage(self, progress_callback=None):
-        # self.sendmessage()
+        n_frame = self.tui.widgets.LineEdit_int_frame.value()
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         while Dictionaries._AppVars['recon_dane'] == False:
-            total_frame = ''
-            while True:
-                data = self.s.recv(9535)
-                endData = data.decode()[-3:]
 
-                try:
-                    if endData != 'FEFF':
-                    # if data.decode()[-1] != '}':
-                        total_frame += data.decode('utf-8')
-                    else:
-                        total_frame += data.decode('utf-8')
-                        self.Voltages_from_json(total_frame)
-                        self.buttonReconstructionClick()
+            try:
+                self.s.connect((self.host, self.port))
+                self.tui.widgets.btn_STOP.setEnabled(True)
+                # QMessageBox.warning(self, "Connection", "Connection made")
+                Dictionaries._AppVars['Device active'] = 1
+                total_frame = ''
+                t = 1  # dla samej ramiki danych jest 1 dla początkowych wartości jest 0
 
 
-                        break  # show in terminal
-                except:
-                    zero = 0
-            time.sleep(10)
-            message = 'Kolejna ramka'
-            self.tui.update_message_box(new_message=message)
-            self.s.sendall(message.encode('utf-8'))
-        return 'Done'
+                while Dictionaries._AppVars['recon_dane'] == False:
+
+                    # message = Dictionaries._AppVars['message']
+                    # if t == 0:
+                    #     # M = Dictionaries._AppNotifications['Send param device'][Dictionaries._AppVars['Language']]
+                    #     # progress_callback.emit(M)
+                    #     print('wysyłam ustawienia urządzenia')
+                    #     # self.tui.update_message_box(new_message=M)
+                    #     meas_Dicit = json.loads(message.encode())
+                    #     Keys = meas_Dicit['payload'].keys()
+                    #
+                    #     for k in Keys:
+                    #         new_message = {
+                    #             'sequence': {},
+                    #             'payload': {
+                    #                 k: meas_Dicit['payload'][k]
+                    #             }
+                    #         }
+                    #         jm = json.dumps(new_message) + '\r\n'
+                    #         nr_prub = 0
+                    #         while nr_prub <= 3:
+                    #             self.s.sendall(jm.encode())
+                    #             data_recev = self.s.recv(1024)
+                    #             recev_Dicit = json.loads(data_recev.decode('utf-8'))
+                    #             nr_prub = 0
+                    #             if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+                    #                 print(k +' zaktualizowano')
+                    #                 nr_prub = 10
+                    #             else:
+                    #                 nr_prub += 1
+                    #                 if nr_prub > 3:
+                    #                     print('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+                    #     print('ustawiono parametry urządzenia')
+                    # elif t == 1:
+                    #     self.sendmessage_newFrame()
+                    #     # print('Pobieram ustawienia ramki')
+                    #     message = Dictionaries._AppVars['message']
+                    #     print('wysyłam ustawienia ramki')
+                    #     # M = Dictionaries._AppNotifications['Send param frames'][Dictionaries._AppVars['Language']]
+                    #     # progress_callback.emit(M)
+                    #     # self.tui.update_message_box(new_message=M)
+                    #
+                    #     # self.s.sendall(message.encode())
+                    #     meas_Dicit = json.loads(message.encode())
+                    #     Keys = meas_Dicit['payload'].keys()
+                    #
+                    #     for k in Keys:
+                    #         new_message = {
+                    #             'sequence': {},
+                    #             'payload': {
+                    #                 k: meas_Dicit['payload'][k]
+                    #             }
+                    #         }
+                    #         jm = json.dumps(new_message) + '\r\n'
+                    #         nr_prub = 0
+                    #         while nr_prub <= 3:
+                    #             self.s.sendall(jm.encode())
+                    #             data_recev = self.s.recv(1024)
+                    #             recev_Dicit = json.loads(data_recev.decode('utf-8'))
+                    #             nr_prub = 0
+                    #             if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+                    #                 print(k +' zaktualizowano')
+                    #                 nr_prub = 10
+                    #             else:
+                    #                 nr_prub += 1
+                    #                 if nr_prub > 3:
+                    #                     print('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+                    #     print('ustawiono parametry ramki')
+                    #
+                    # # time.sleep(2)
+                    # # print('Odbieram')
+                    #
+                    # # self.tui.update_message_box(new_message='pobieram ramkę danych')
+                    # # time.sleep(2)
+                    # # total_str = ''
+                    # # if t == 0:
+                    # #     data = self.s.recv(1024)
+                    # #     print(data.decode())
+                    # #     # sparawdz czy pokrywają się jsony
+                    # #     if np.all(message == data.decode()):
+                    # #         print('poprawnie wysłano ustawienia')
+                    # #     else:
+                    # #         print('coś poszło nie tak')
+                    # #
+                    # #     # self.tui.update_message_box(new_message=data.decode())
+                    # #
+                    # # else:
+                    # #     # print('Odbieram ramkę danych')
+                    # #
+                    # #     # while True:
+                    # else:
+                        # odbieramy komunikaty ile zostało już zapisanych ramek danych
 
 
+                    data = self.s.recv(2067)
+                    # endData = data.decode('utf-8')[-5:-1]
+                    # if endData == 'FEFF':
+                    #     total_str += data.decode('utf-8')
+                    #     break
+                    total_str = data
+                    # print('cała ramka pobrana')
+                    # M = Dictionaries._AppNotifications['Recive frame'][Dictionaries._AppVars['Language']]
+                    # self.tui.update_message_box(new_message=M)
+                    # progress_callback.emit(M)
+                    # M = Dictionaries._AppNotifications['Recon'][Dictionaries._AppVars['Language']]
+                    # self.tui.update_message_box(new_message=M)
+                    # progress_callback.emit(M)
+                    self.Voltages_from_json(total_str)
+                    self.buttonReconstructionClick()
 
-    def sendmessage(self):
-        self.tui.update_message_box(new_message='pobieranie ramki danych')
+                    time.sleep(10)
+                    # n_frame = t - 2
+                    if t == n_frame:
+                        Dictionaries._AppVars['recon_dane'] = False
+                        self.STOP_device()
+                        message = Dictionaries._AppVars['message']
+                        self.s.sendall(message.encode())
+                        self.s.close()
+                        M = Dictionaries._AppNotifications['Recon n done'][Dictionaries._AppVars['Language']]
+                        progress_callback.emit(M)
+                        # self.tui.update_message_box(new_message=M)
+                        break
+
+                        # Dictionaries._AppVars['message'] = jm
+                    t += 1
+
+
+            except:
+                M = Dictionaries._AppNotifications['Connection field'][Dictionaries._AppVars['Language']]
+                progress_callback.emit(M)
+                # self.tui.update_message_box(new_message=M)
+                # print("Failed to connect with {}:{}".format(self.host, self.port))
+
+
+    def sendmessage_newFrame(self):
+        # self.tui.update_message_box(new_message='pobieranie ramki danych')
         serie = self.tui.widgets.LineEdit_int_frame.value()
-        # live = 'True' if (serie <= 0) else 'false'
+        ch_live = self.tui.widgets.Live_check_box.isChecked()
+        live = '1' if ch_live else '0'
+
         message = {
             "sequence": {},
             "payload": {
-                "measurement": "read",
-                "serie": str(serie)}
+                "live": live,
+                "count": str(serie),
+                "start": "1",
+            }
         }
         jm = json.dumps(message)
-        self.s.sendall(jm.encode())
+        Dictionaries._AppVars['message'] = jm + '\r\n'
+        # with open
+        # self.s.sendall(jm.encode())
+
+        # with tcp_connection_to((self.host, self.port)) as conn:
+        #     conn.sendall(jm.encode())
 
 
 
@@ -542,34 +883,145 @@ class MainWindow(QMainWindow):
         message = {
             "sequence": {},
             "payload": {
-                "start": "false"
+                "start": "0"
             }
         }
         jm = json.dumps(message)
-        self.s.sendall(jm.encode('utf-8'))
+        # self.s.sendall(jm.encode('utf-8'))
+        Dictionaries._AppVars['message'] = jm
         Dictionaries._AppVars['recon_dane'] = 'True'
-        self.s.close()
+        # self.s.close()
         self.tui.widgets.btn_STOP.setEnabled(False)
 
 
-    # button clicks
+    def SPDR_progress(self, new_message):
 
-    # def MeasPage_mouseMove(self, s):
-    #     color = Settings.BTN_RIGHT_BOX_COLOR
-    #     style = widgets.stackedWidget.new_page.btn_meas.styleSheet()
-    #     self.tui.new_page.btn_meas.setStyleSheet("background:rgba(90,90,250,90)")
-    def SPDR_progress(self, s):
-        self.tui.update_message_box(new_message=s)
+        # self.tui.disable_enable_language_buttons_for_multithreading(make_active=False)
+        #
+        # self.tui.message_box.clear()
+        # self.tui.infoBar.setStyleSheet("background:rgb(230,100,7)")
+        # self.tui.message_box.moveCursor(QTextCursor.Start)
+        # self.tui.message_box.insertPlainText(str(datetime.now().strftime('%H:%M:%S'))
+        #                                      + " - Info: "
+        #                                      + new_message)
+        # self.tui.clear_infoBar()
+        # self.tui.update_message_box(new_message=s)
+        print(new_message)
+
 
     def SPDR_complete(self, s=None):
         if s == None:
-            s="Done"
+            s = "Done"
         self.tui.update_message_box(new_message=s)
 
 
     def send_param_do_recon(self):
-        self.send_param()
-        self.connection()
+
+        worker = Worker(self.send_param)
+        worker.signals.progress.connect(self.tui.update_message_box)
+        worker.signals.finished.connect(self.SPDR_complete)
+        self.threadpool.start(worker)
+
+        # self.send_param()
+        # self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #
+        # while Dictionaries._AppVars['recon_dane'] == False:
+        #
+        #     try:
+        #         self.s.connect((self.host, self.port))
+        #         self.tui.widgets.btn_STOP.setEnabled(True)
+        #         # QMessageBox.warning(self, "Connection", "Connection made")
+        #         Dictionaries._AppVars['Device active'] = 1
+        #         total_frame = ''
+        #         t = 0  # dla samej ramiki danych jest 1 dla początkowych wartości jest 0
+        #         # message = Dictionaries._AppVars['message']
+        #         # wyślij ustawienia urządzenia
+        #         # print('Wysyłam')
+        #         # print(message.encode())
+        #         # self.s.sendall(message.encode())
+        #         # urządznie odsyła że zostało poprawnie skonfigurowane
+        #         # print('odbieram')
+        #         # data = self.s.recv(1024)
+        #
+        #         # data = data.data()
+        #         # print(data.decode())
+        #         # self.tui.update_message_box(new_message=data.decode())
+        #         while Dictionaries._AppVars['recon_dane'] == False:
+        #
+        #             message = Dictionaries._AppVars['message']
+        #             if t == 0:
+        #                 # M = Dictionaries._AppNotifications['Send param device'][Dictionaries._AppVars['Language']]
+        #                 # progress_callback.emit(M)
+        #                 print('wysyłam ustawienia urządzenia')
+        #                 # self.tui.update_message_box(new_message=M)
+        #                 meas_Dicit = json.loads(message.encode())
+        #                 Keys = meas_Dicit['payload'].keys()
+        #
+        #                 for k in Keys:
+        #                     new_message = {
+        #                         'sequence': {},
+        #                         'payload': {
+        #                             k: meas_Dicit['payload'][k]
+        #                         }
+        #                     }
+        #                     jm = json.dumps(new_message) + '\r\n'
+        #                     nr_prub = 0
+        #                     while nr_prub <= 3:
+        #                         self.s.sendall(jm.encode())
+        #                         data_recev = self.s.recv(1024)
+        #                         recev_Dicit = json.loads(data_recev.decode('utf-8'))
+        #                         nr_prub = 0
+        #                         if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+        #                             print(k +' zaktualizowano')
+        #                             nr_prub = 10
+        #                         else:
+        #                             nr_prub += 1
+        #                             if nr_prub > 3:
+        #                                 print('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+        #                 print('ustawiono parametry urządzenia')
+        #             else:
+        #                 self.sendmessage_newFrame()
+        #                 # print('Pobieram ustawienia ramki')
+        #                 message = Dictionaries._AppVars['message']
+        #                 print('wysyłam ustawienia ramki')
+        #                 # M = Dictionaries._AppNotifications['Send param frames'][Dictionaries._AppVars['Language']]
+        #                 # progress_callback.emit(M)
+        #                 # self.tui.update_message_box(new_message=M)
+        #
+        #                 # self.s.sendall(message.encode())
+        #                 meas_Dicit = json.loads(message.encode())
+        #                 Keys = meas_Dicit['payload'].keys()
+        #
+        #                 for k in Keys:
+        #                     new_message = {
+        #                         'sequence': {},
+        #                         'payload': {
+        #                             k: meas_Dicit['payload'][k]
+        #                         }
+        #                     }
+        #                     jm = json.dumps(new_message) + '\r\n'
+        #                     nr_prub = 0
+        #                     while nr_prub <= 3:
+        #                         self.s.sendall(jm.encode())
+        #                         data_recev = self.s.recv(1024)
+        #                         recev_Dicit = json.loads(data_recev.decode('utf-8'))
+        #                         nr_prub = 0
+        #                         if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+        #                             print(k +' zaktualizowano')
+        #                             nr_prub = 10
+        #                         else:
+        #                             nr_prub += 1
+        #                             if nr_prub > 3:
+        #                                 print('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+        #                 print('ustawiono parametry ramki')
+        #     except:
+        #         M = Dictionaries._AppNotifications['Connection field'][Dictionaries._AppVars['Language']]
+        #         self.tui.update_message_box(new_message=M)
+                # progress_callback.emit(M)
+
+        # self.connection()
+
 
         # worker_process.start()
 
@@ -582,22 +1034,46 @@ class MainWindow(QMainWindow):
         # worker.signals.finished.connect(self.SPDR_complete)
         # self.threadpool.start(worker)
 
+
     def buttonReconstructionDeviceClick(self):
-        worker = Worker(self.receivemessage)
-        worker.signals.finished.connect(self.SPDR_complete)
-        self.threadpool.start(worker)
+        # while Dictionaries._AppVars['recon_dane'] == False:
+        # self.receivemessage()
+        # t = Thread(target=self.receivemessage)
+        # t.daemon = True
+        # t.start()
+        serie = self.tui.widgets.LineEdit_int_frame.value()
+        live = '1' if (self.tui.widgets.Live_check_box.isChecked()) else '0'
+        Dictionaries._AppVars['recon_dane'] = False
+        Dictionaries._AppVars['start_recon'] = True
+        # if live == '0':
+        #     worker_waitting_for_all_frames = Worker(self.collecting_frames)
+        #     worker_waitting_for_all_frames.signals.progress.connect(self.progress_collecting)
+        #     worker_waitting_for_all_frames.signals.finished.connect(self.finished_collecting)
+        #     self.threadpool.start(worker_waitting_for_all_frames)
+        #     worker = Worker(self.receivemessage)
+        #     worker.signals.progress.connect(self.tui.update_message_box)
+        #     worker.signals.finished.connect(self.SPDR_complete)
+        #     self.threadpool.start(worker)
+        # else:
+        #     worker = Worker(self.receivemessage_live)
+        #     worker.signals.progress.connect(self.tui.update_message_box)
+        #     worker.signals.finished.connect(self.SPDR_complete)
+        #     self.threadpool.start(worker)
 
 
-    def send_param(self):
+
+    def send_param(self, progress_callback=None):
+        # region wczytanie ustawień wybranych przez urzytkownika na aplikacji
         type = self.tui.widgets.ComboBox_tryb.currentText()
         mode = 0 if type == 'EIT' else 1 if type == 'ECT' else 2
         sequence = self.tui.widgets.ComboBox_stim_pattern.currentText()
         excitation = 0 if sequence == '32(0-4)' else 1 if sequence == '32(0-8)' else 2 if sequence == '32(0-16)' else 3
-        frequency = self.tui.widgets.ComboBox_frequency.currentText()
+        frequency = self.tui.widgets.ComboBox_frequency.currentText()[:-3]
         interval_frame = self.tui.widgets.LineEdit_interval_frame.value()
         amp = self.tui.widgets.Slider_amp.slider.value()
         serie = self.tui.widgets.LineEdit_int_frame.value()
-        live = 'True' if (serie <= 0) else 'false'
+        n_frame = serie
+        # live = 'True' if (serie >= 1) else 'false'
 
 
         dictionary = {
@@ -606,132 +1082,316 @@ class MainWindow(QMainWindow):
                 "mode": str(mode),
                 "excitation": str(excitation),
                 "frequency": frequency,
-                "current": str(amp) + 'uA',
-                "storage_dest": "USB",
-                "measurement_time": str(interval_frame),
-                "measurement_count": str(serie),
+                "current": str(amp),
+                # "int_interval": str(interval_frame),
+                # "measurement_count": str(serie),
             }
         }
         finite_element_mesh = self.tui.new_page.reconstruction_page.Label_load_model.text()
         mesh = load_mesh_from_mat_file_v2(finite_element_mesh)
 
-        stim_structure = {
-            'n_electrodes': len(mesh['electrodes_nodes']),
-            'd_stim': int(sequence[-2]),
-            'd_meas': 1,
-            'z_contact': mesh['z_contact'],
-            'amp': amp,
-        }
+        if sequence != '32(3D)':
+
+            stim_structure = {
+                'n_electrodes': len(mesh['electrodes_nodes']),
+                'd_stim': int(sequence[-2]),
+                'd_meas': 1,
+                'z_contact': mesh['z_contact'],
+                'amp': amp,
+            }
+        else:
+            stim_structure = {
+                'n_electrodes': len(mesh['electrodes_nodes']),
+                'd_stim': 8,
+                'd_meas': 8,
+                'z_contact': mesh['z_contact'],
+                'amp': amp,
+            }
         # ustawienie danych modelu
-        stimulation = stim_pattern(stim_structure)
+        stimulation = stim_pattern3D(stim_structure)
         Dictionaries._AppModel['stim_pattern'] = stimulation
         eit_3D = Image_EIT_3D_tetra(mesh, stimulation=stimulation, shape_ele='surface')
         eit_3D.set_up()
         Dictionaries._AppModel['Model'] = eit_3D
 
-
-        # host = '10.10.2.149'  # as both code is running on same pc
-        # port = 500  # socket server port number
-
-        # client_socket = socket.socket()  # instantiate
-        # client_socket.connect((host, port))  # connect to the server
-        # progress_callback.emit('Connect to device')
-        # Dictionaries._AppVars['Device active'] = 1
-        # message = Dictionaries._AppNotifications['Active Device'][Dictionaries._AppVars['Language']]
-        # self.tui.update_message_box(new_message=message)
         message = json.dumps(dictionary)
         Dictionaries._AppVars['message'] = message
-        # client_socket.sendall(message.encode('utf-8'))
-        #
-        # while True:
-        #
-        #     print('connection from', host)
-        #
-        #     # Receive the data in small chunks and retransmit it
-        #     total_frame = ''
-        #     progress_callback.emit('Get data frame')
-        #     while True:
-        #         data = client_socket.recv(9535)
-        #         try:
-        #             if data.decode()[-1] != '}':
-        #                 total_frame += data.decode('utf-8')
-        #             else:
-        #                 total_frame += data.decode('utf-8')
-        #                 self.Voltages_from_json(total_frame)
-        #                 self.buttonReconstructionClick()
-        #
-        #                 break # show in terminal
-        #         except:
-        #             zero = 0
-        #         message = 'Kolejna ramka'
-        #         client_socket.sendall(message.encode('utf-8'))
-        #
-        #     # message = input(" -> ")  # again take input
-        #
-        # client_socket.close()  # close the connection
-        # return "Finished recon"
+        TUIFunctions.tofNewPage_StackPages(self, "reconstruction_page")
+        # endregion
+        # self.tui.new_page.btn_recontruction_frame.clicked()
+        # region łaczymy się z serwerem
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # endregion
+        t = 0
+        # region wysyłanie parametrów urządzenia i ustawień ramki
+        while t < 1:
+
+            try:
+                self.s.connect((self.host, self.port))
+                self.tui.widgets.btn_STOP.setEnabled(True)
+                # QMessageBox.warning(self, "Connection", "Connection made")
+                Dictionaries._AppVars['Device active'] = 1
 
 
-        # host = socket.gethostname()  # as both code is running on same pc
-        # port = 5000  # socket server port number
-        #
-        # client_socket = socket.socket()  # instantiate
-        # client_socket.connect((host, port))  # connect to the server
-        #
-        # message = input(" -> ")  # take input
-        # while True:
-        #     # Create a TCP/IP socket
-        #     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #
-        #     # Connect the socket to the port where the server is listening
-        #     server_address = (socket.gethostname(), 10000)
-        #     print('connecting to %s port %s' % server_address)
-        #     sock.connect(server_address)
-        #     try:
-        #
-        #         # Send data
-        #         message = json.dump(dictionary)
-        #         print('sending "%s"' % message)
-        #         sock.sendall(message.encode('utf-8'))
-        #
-        #         # Send data
-        #         message = 'This is the message.  It will be repeated.'
-        #         print('sending "%s"' % message)
-        #         sock.sendall(message.encode('utf-8'))
-        #
-        #     finally:
-        #         print('closing socket')
-        #         sock.close()
+                message = Dictionaries._AppVars['message']
+                for t in range(2):
+                    if t == 0:
 
-        # if self.tui.widgets.LineEdit_int_frame.value()
-        # dictionary['payload'] = dict(['start', 'live', 'serie'], [True, ])
-        # {
-        #     "sequence": { },
-        #     "payload": {
-        #         "start": "true",
-        #         "live": "true",
-        #         "serie": 0}
-        # }
+                        progress_callback.emit('wysyłam ustawienia urządzenia')
+                        # self.tui.update_message_box(new_message=M)
+                        meas_Dicit = json.loads(message.encode())
+                        Keys = meas_Dicit['payload'].keys()
 
+                        for k in Keys:
+                            new_message = {
+                                'sequence': {},
+                                'payload': {
+                                    k: meas_Dicit['payload'][k]
+                                }
+                            }
+                            jm = json.dumps(new_message) + '\r\n'
+                            nr_prub = 0
+                            while nr_prub <= 3:
+                                self.s.sendall(jm.encode())
+                                data_recev = self.s.recv(1024)
+                                recev_Dicit = json.loads(data_recev.decode('utf-8'))
+                                nr_prub = 0
+                                if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+                                    # print(k + ' zaktualizowano')
+                                    nr_prub = 10
+                                else:
+                                    nr_prub += 1
+                                    if nr_prub > 3:
+                                        print('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+                        progress_callback.emit('ustawiono parametry urządzenia')
+
+                    else:
+                        self.sendmessage_newFrame()
+                        # print('Pobieram ustawienia ramki')
+                        message = Dictionaries._AppVars['message']
+                        progress_callback.emit('wysyłam ustawienia ramki')
+                        # M = Dictionaries._AppNotifications['Send param frames'][Dictionaries._AppVars['Language']]
+                        # progress_callback.emit(M)
+                        # self.tui.update_message_box(new_message=M)
+
+                        # self.s.sendall(message.encode())
+                        meas_Dicit = json.loads(message.encode())
+                        Keys = meas_Dicit['payload'].keys()
+
+                        for k in Keys:
+                            new_message = {
+                                'sequence': {},
+                                'payload': {
+                                    k: meas_Dicit['payload'][k]
+                                }
+                            }
+                            jm = json.dumps(new_message) + '\r\n'
+                            nr_prub = 0
+                            while nr_prub <= 3:
+                                self.s.sendall(jm.encode())
+                                if k != 'start':
+                                    data_recev = self.s.recv(1024)
+                                    recev_Dicit = json.loads(data_recev.decode('utf-8'))
+                                    nr_prub = 0
+                                    if recev_Dicit['payload'][k] == meas_Dicit['payload'][k]:
+                                        # print(k + ' zaktualizowano')
+                                        nr_prub = 10
+                                    else:
+                                        nr_prub += 1
+                                        if nr_prub > 3:
+                                            progress_callback.emit('dla ' + k + ' wykonano 3 pruby ustawienia urzadenia')
+                                else:
+                                    nr_prub = 10
+                        progress_callback.emit('ustawiono parametry ramki')
+
+            except:
+                M = Dictionaries._AppNotifications['Connection field'][Dictionaries._AppVars['Language']]
+                self.tui.update_message_box(new_message=M)
+        # endregion
+        # Przystepujemy do rekonstrukcji
+        while Dictionaries._AppVars['recon_dane'] == False:
+
+            if Dictionaries._AppVars['start_recon']:
+                ch_live = self.tui.widgets.Live_check_box.isChecked()
+                # region Czy mamy doczynienia z zgromadzeniem ramek na urządzeniu
+                if not ch_live:
+                    collecting = True
+
+                    # self.s.connect((self.host, self.port))
+                    # self.tui.widgets.btn_STOP.setEnabled(True)
+                    # komunikat rozpoczęcia zbieranie ramki danych
+                    msg = {
+                        "sequence": {},
+                        "payload": {
+                            'start': '1'}}
+                    jm_msg = json.dumps(msg)
+                    # self.s.sendall(jm_msg.encode())
+                    # czekamy aż wyślą nam komunikat
+                    msg_return = {
+                        "sequence": {},
+                        "payload": {
+                            'start': '0'}
+                    }
+                    ProgessWindow = ProgessDialog()
+                    ProgessWindow.exec_()
+
+                    while collecting:
+
+                        data = self.s.recv(1024)
+                        recev_Dicit = json.loads(data.decode('utf-8'))
+                        try:
+                            if recev_Dicit['payload']['start'] == '0':
+                                collecting = False
+                                ProgessWindow.ProgressBar.setValue(100)
+                                print('zebrano całą serię')
+                        except:
+                            new_value = recev_Dicit['payload']['measurementsCollected']
+                            ProgessWindow.ProgressBar.setValue(int(new_value / serie * 100))
+                # endregion
+
+                Dictionaries._AppVars['Device active'] = 1
+                total_frame = b''
+                t = 2  # dla samej ramiki danych jest 1 dla początkowych wartości jest 0
+                # message = Dictionaries._AppVars['message']
+                # wyślij ustawienia urządzenia
+                # print('Wysyłam')
+                # print(message.encode())
+                # self.s.sendall(message.encode())
+                # urządznie odsyła że zostało poprawnie skonfigurowane
+                # print('odbieram')
+                # data = self.s.recv(1024)
+
+                # data = data.data()
+                # print(data.decode())
+                # self.tui.update_message_box(new_message=data.decode())
+                # region rekonstruujemy ramka po ramce
+                while Dictionaries._AppVars['recon_dane'] == False:
+                    data = self.s.recv(2067)
+
+                    total_frame += data
+                    try:
+                        recev_Dicit = json.loads(total_frame.decode('utf-8'))
+                        progress_callback.emit(json.dumps(recev_Dicit['payload']))
+
+                    except:
+                        try:
+                            total_frame = self.Voltages_from_json(total_frame)
+                            self.buttonReconstructionClick()
+
+                            time.sleep(7)
+                        except:
+                            zero = 0
+
+                    # Dictionaries._AppVars['message'] = jm
+                    if n_frame != 1 and t == n_frame:
+                        Dictionaries._AppVars['recon_dane'] = False
+                        self.STOP_device()
+                        message = Dictionaries._AppVars['message']
+                        self.s.sendall(message.encode())
+                        self.s.close()
+                        M = Dictionaries._AppNotifications['Recon n done'][Dictionaries._AppVars['Language']]
+                        progress_callback.emit(M)
+                        # self.tui.update_message_box(new_message=M)
+                        Dictionaries._AppVars['start_recon'] = False
+                        break
+
+                    t += 1
+                # endregion
+
+            else:
+                progress_callback.emit('przyciśnij przycisk recon na zakłatce poniżej bierzącej')
+                time.sleep(5)
+
+
+    def collecting_frames(self, progress_callback=None):
+
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serie = self.tui.widgets.LineEdit_int_frame.value()
+        collecting = True
+
+        while collecting:
+
+            try:
+                self.s.connect((self.host, self.port))
+                # self.tui.widgets.btn_STOP.setEnabled(True)
+                # komunikat rozpoczęcia zbieranie ramki danych
+                msg = {
+                    "sequence": {},
+                    "payload": {
+                        'start': '1'}}
+                jm_msg = json.dumps(msg)
+                self.s.sendall(jm_msg.encode())
+                # czekamy aż wyślą nam komunikat
+                msg_return = {
+                    "sequence": {},
+                    "payload": {
+                        'start': '0'}
+                }
+                ProgessWindow = ProgessDialog()
+                ProgessWindow.exec_()
+
+
+                data = self.s.recv(1024)
+                recev_Dicit = json.loads(data.decode('utf-8'))
+                try:
+                    if recev_Dicit['payload']['start'] == '0':
+                        collecting = False
+                        ProgessWindow.ProgressBar.setValue(100)
+                        print('zebrano całą serię')
+                except:
+                    new_value = recev_Dicit['payload']['measurementsCollected']
+                    ProgessWindow.ProgressBar.setValue(int(new_value/serie*100))
+
+
+            except:
+                print('bład przy zbieraniu ramek danych')
+
+
+        ProgessWindow = ProgessDialog()
+        ProgessWindow.exec_()
+
+    def progress_collecting(self, value):
+        print(value)
+
+    def finished_collecting(self):
+        print('Done')
 
 
     def Voltages_from_json(self, total_frame_str):
         V = total_frame_str
-        # podział na wiersze
-        dataW = V.split("\"], [\"")
-        # podział na kolumny
-        dataWC = [x.split("\", \"") for x in dataW]
-        dataWC[0][0] = dataWC[0][0].split("[[\"")[1]
-        dataWC[-1][-1] = dataWC[-1][-1].split("\"]]")[0]
-        data_array = np.row_stack([*dataWC])
-        # rzutowanie na inty i reshape to correct shape
-        voltages = np.array([int(data_array[x, y], 16) for x in range(data_array.shape[0]) for y in range(data_array.shape[1])]).reshape(data_array.shape)
-        Dictionaries._AppModel['raw_data'] = voltages
+        # czy mamy ciapki
+        if V[0] == '"':
+            V = V[1:-1]
 
-        self.tui.new_page.meas_page.model._data = voltages[:, 3:3+32]
-        self.change_colorMap()
+        # Wyznaczamy zanaki początku i końca ramki
+        ind_b = find_FFFE(V)
+        ind_e = find_FEFF(V[ind_b+4:])
+        if ind_e != None:
+            ind_e += ind_b+4
+            VV = V[ind_b+2+2+2:ind_e]  # dwa na FFFE dwa na początek 2 na zanak wczytywania
+            model = Dictionaries._AppModel['Model']
+            N_ele = model.electrodes[0].__len__()
+            N_meas = int(N_ele**2)
+            voltages = np.zeros(N_meas)
+            for x in range(N_meas):
+                voltages[x] = int.from_bytes(VV[2*x:2*x+2], byteorder='big')
+            voltages_array = voltages.reshape(N_ele, N_ele)
+            stim_p = np.row_stack([x.toarray() for x in model.stim['stim_pattern']])
+            p_minus = np.argwhere(stim_p < 0)[:, 1]
+            p_plus = np.argwhere(stim_p > 0)[:, 1]
+            amp = np.ones(N_ele) * stim_p.max()
+            Dictionaries._AppModel['raw_data'] = np.block([amp.reshape(-1, 1),
+                                                           p_plus.reshape(-1, 1),
+                                                           p_minus.reshape(-1, 1),
+                                                           voltages_array])
+            self.tui.new_page.meas_page.model._data = voltages_array
+            self.change_colorMap()
+            return V[ind_e:]
+        else:
+            return total_frame_str
 
-        pass
 
     def buttonClick(self):
 
@@ -920,6 +1580,7 @@ class MainWindow(QMainWindow):
 
 
     def buttonReconstructionClick(self):
+        Dictionaries._AppVars['start_recon'] = True
 
         if Dictionaries._AppVars['Device active'] == 0:
             worker = Worker(self.tui.solve_inverse_problem)
@@ -930,9 +1591,10 @@ class MainWindow(QMainWindow):
         worker.signals.finished.connect(self.thread_complete)
         self.threadpool.start(worker)
 
+
     def thread_complete(self):
         self.tui.update_message_box(new_message='Dane')
-        Dictionaries._AppVars['recon_dane'] = True
+        # Dictionaries._AppVars['recon_dane'] = True
 
     def buttonModelClick(self):
         # btn = self.sender()

@@ -1,6 +1,8 @@
 import json
 import socket
 import sys
+import time
+
 from modules import *
 
 
@@ -12,30 +14,63 @@ with open('sample.json', 'r') as openfile:
 host = '0.0.0.0'
 port = 500  # initiate port no above 1024
 
-server_socket = socket.socket()  # get instance
-# look closely. The bind() function takes tuple as argument
-server_socket.bind((host, port))  # bind host address and port together
 
-# configure how many client the server can listen simultaneously
-server_socket.listen(10)
-conn, address = server_socket.accept()  # accept new connection
-print("Connection from: " + str(address))
-# VV = vhex(np.array(DFs['voltages_P'], dtype=int)).tolist()
+
+
+# def server_program():
+# get the hostname
+host = "127.0.0.1"
+port = 500  # initiate port no above 1024
+
+# Create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Bind the socket to the port
+server_address = (host, port)
+print('starting up on %s port %s' % server_address)
+sock.bind(server_address)
+
+# Listen for incoming connections
+sock.listen(1)
+Message = ['Otrzymano ustawienia urządzenia', 'Ustawiono ustawienia', 'parametry ramki', 'ramka danych']
 while True:
-    # receive data stream. it won't accept data packet greater than 1024 bytes
-    data = conn.recv(4096).decode()
-    if not data:
-        # if data is not received break
-        break
-    print("from connected user: " + str(data))
-    # data = VV
+    # Wait for a connection
+    print('waiting for a connection')
+    connection, client_address = sock.accept()
+    try:
+        print('connection from', client_address)
 
-    message = json.dumps(json_object)
-    conn.sendall(message.encode('utf-8'))  # send data to the client
-    data = conn.recv(4096).decode()
-    print("from connected user: " + str(data))
-    message = json.dumps(json_object)  # send data to the client
-    conn.sendall(message.encode('utf-8'))
+        # Receive the data in small chunks and retransmit it
+        total_str = ''
+        t = 0
+        while True:
+            ind = 0 if t == 0 else 2
+            print('odbieram')
+            print(Message[ind])
+            data = connection.recv(1024)
+            if data:
+                total_str += data.decode('utf-8')
+            else:
+                print(total_str)
+                print('no more data from', client_address)
+            print(data.decode())
+            if ind == 0:
+                data = Message[1]
+                print('wysyłam')
+                print(data)
+                connection.sendall(data.encode())
+            else:
+                data = json.dumps(json_object)
+                # data = Message[1]
+                print('wysyłam')
+                print(data)
+                connection.sendall(data.encode())
+            time.sleep(15)
+            t += 1
 
 
-conn.close()  # close the connection
+    finally:
+        # Clean up the connection
+        connection.close()
+# if __name__ == '__main__':
+#     server_program()

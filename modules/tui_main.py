@@ -1082,6 +1082,8 @@ class tui_MainWindow(object):
             Dictionaries._AppLang['Amp'][Dictionaries._AppVars['Language']], None))
         self.widgets.Label_int_frame.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Int frame'][Dictionaries._AppVars['Language']], None))
+        self.widgets.Text_Live.setText(QCoreApplication.translate("MainWindow",
+            Dictionaries._AppLang['Live'][Dictionaries._AppVars['Language']], None))
         self.widgets.btn_send_params.setText(QCoreApplication.translate("MainWindow",
             Dictionaries._AppLang['Send param'][Dictionaries._AppVars['Language']], None))
 
@@ -1264,13 +1266,22 @@ class tui_MainWindow(object):
     #     print('jestem na zakladce new_page')
     #     self.keyboardwidget.setSource(QUrl.fromLocalFile("src/empty.qml"))
 
-    def solve_inverse_problem_device(self, progress_callback):
-        progress_callback.emit('Loading Model')
+    def up_grade_info_box(self, s):
+        self.new_page.reconstruction_page.Info_box.moveCursor(QTextCursor.Start)
+        self.new_page.reconstruction_page.Info_box.insertPlainText(str(s) + '\n')
+        self.new_page.reconstruction_page.Info_box.moveCursor(QTextCursor.Start)
+
+
+    def solve_inverse_problem_device(self, progress_callback=None):
+        if progress_callback is None:
+            self.up_grade_info_box('Loading Model')
+        else:
+            progress_callback.emit('Loading Model')
         eit_3D = Dictionaries._AppModel['Model']
         max_iterations = int(self.new_page.reconstruction_page.qdial_number_of_iteration.value())
         alpha = float(self.new_page.reconstruction_page.QcomboBox_regularyzation_parameter.currentText())
         method = self.new_page.reconstruction_page.Method_of_reconstruction.currentText()
-        raw_data = Dictionaries._AppModel['raw_data']
+        raw_data = np.array(Dictionaries._AppModel['raw_data'])
         HT_data = get_data_from_array(raw_data)
         data_frame_full = {'stimulation': HT_data['stimulation'], 'voltages': HT_data['voltages']}
 
@@ -1281,7 +1292,7 @@ class tui_MainWindow(object):
 
         else:
             data_frame = {'stimulation': DFs['stimulation'], 'voltages': DFs['voltages_P']}
-        progress_callback.emit('Defined preliminary variables')
+        self.up_grade_info_box('Defined preliminary variables')
 
         eit_3D.up_grade_value_elems(np.ones_like(eit_3D.value_elems))
 
@@ -1289,7 +1300,7 @@ class tui_MainWindow(object):
 
         voltage_factor = np.linalg.norm(data_frame['voltages']) / np.linalg.norm(U_ref)
 
-        U = (1.0 / voltage_factor) * data_frame['voltages']
+        U = (1.0 / voltage_factor) * data_frame['voltages'].reshape(-1)
         Dictionaries._AppModel['U1'] = U
         if (type(alpha).__name__ != 'float'): raise TypeError("Parameter 'alpha' is not valid.")
 
@@ -1302,7 +1313,7 @@ class tui_MainWindow(object):
 
         if (max_iterations < 1): raise ValueError("Parameter 'max_iterations' is not valid.")
 
-        progress_callback.emit('Calculate reconstruction')
+        self.up_grade_info_box('Calculate reconstruction')
 
         # ['Tikhonov', 'Damp_Newton', 'Kotre',
         #  'Marquardt-Levenberg', 'Total Variation', 'Elasticnet']
@@ -1315,20 +1326,32 @@ class tui_MainWindow(object):
             RtR = RtR.astype(np.float_)
 
             eit_3D.change_ms_inv(lamb=alpha, RtR=RtR)
-            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            if progress_callback is None:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True)
+            else:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
             U2 = eit_3D.fs
         if method == 'Tikhonov':
             eit_3D.change_ms_inv(lamb=alpha, method='dgn')
-            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            if progress_callback is None:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True)
+            else:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
             U2 = eit_3D.fs
         if method == 'Marquardt-Levenberg':
             eit_3D.change_ms_inv(lamb=alpha, method='lm')
-            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            if progress_callback is None:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True)
+            else:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
             U2 = eit_3D.fs
 
         if method == 'Kotre':
             eit_3D.change_ms_inv(lamb=alpha, method='kotre')
-            eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
+            if progress_callback is None:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True)
+            else:
+                eit_3D.reconstruction_gn(U, maxiter=max_iterations, obj_fun_val=True, progress_callback=progress_callback)
             U2 = eit_3D.fs
 
         if method == 'Elasticnet':
@@ -1370,8 +1393,6 @@ class tui_MainWindow(object):
 
 
         return eit_3D
-
-        pass
 
 
     def solve_inverse_problem(self, progress_callback):
@@ -1524,8 +1545,8 @@ class tui_MainWindow(object):
 
         colormap = np.load('cm/cm_seismic_plotly.npy')
         sm = [[float(colormap[x][0]), colormap[x][1]] for x in range(256)]
-
-        Fig = self.EIT_reconstruction.display(middle_value=self.EIT_reconstruction.value_elems.mean(), colormap=sm)
+        Model = Dictionaries._AppModel['Model']
+        Fig = Model.display(middle_value=Model.value_elems.mean(), colormap=sm)
         # camera = dict(eye=dict(x=1.25, y=1.25, z=1.25),
         #               up=dict(x=0,y=0,z=0),
         #               # up=dict(x=np.round(old_up[0],2), y=np.round(old_up[1],2), z=np.round(old_up[2],2)),
@@ -1552,7 +1573,7 @@ class tui_MainWindow(object):
 
     def get_value_to_slice(self, axis, s=None):
         if s is None:
-            s = self.EIT_3D
+            s = Dictionaries._AppModel['Model']
         if axis == 0:
             value = self.new_page.grid_page.x_slider.value() * 0.01
             x_min = s.nodes[:, 0].min()

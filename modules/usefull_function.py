@@ -6,6 +6,7 @@ import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qtagg import FigureCanvas
+import scipy.sparse as sp
 # matplotlib.use('Qt5Agg')
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -137,3 +138,89 @@ def print_voltages(U1,U2):
     # sc.tight_layout()
     return pix_map
 
+
+def find_FFFE(str):
+    N = len(str)
+    for x in range(N-2):
+        if str[x:x+2] == b'\xff\xfe':
+            ind = x
+            break
+        else:
+            ind = None
+    return ind
+
+
+def find_FEFF(str):
+    N = len(str)
+    for x in range(N):
+        if str[x:x+2] ==b'\xfe\xff':
+            ind = x
+            break
+        else:
+            ind = None
+    return ind
+
+
+
+def stim_pattern3D(stim_structure):
+    n_electrodes = stim_structure['n_electrodes']
+    d_stim = stim_structure['d_stim']
+    d_meas = stim_structure['d_meas']
+    z_contact = stim_structure['z_contact']
+    amp = stim_structure['amp']
+
+    stim = {
+        'stim_pattern': list([]),
+        'meas_pattern': list([]),
+        'z_contact': z_contact
+    }
+    ele_half = int(n_electrodes/2)
+    ele_minus_stim = np.int32(np.linspace(0, n_electrodes - 1, n_electrodes))
+    ele_plus_stim = np.array([(x+d_stim) % ele_half + int(x/ele_half)*ele_half for x in ele_minus_stim])
+    n_projection = ele_minus_stim.size
+    if d_stim == d_meas:
+        ele_minus_meas = ele_minus_stim
+        ele_plus_meas = ele_plus_stim
+    else:
+        ele_minus_meas = np.int32(np.linspace(0, n_electrodes - 1, n_electrodes))
+        ele_plus_meas = np.array([(x+d_meas)%ele_half + int(x/ele_half)*ele_half for x in ele_minus_stim])
+    value = np.ones([1, n_projection])
+    stim_plus_stim = [
+        sparse_row(np.int32(np.array([ele_plus_stim[x]])), np.array([-1 * amp * value[0, x]]), n_electrodes)
+        for x in range(0, n_projection)]
+    stim_minus_stim = [
+        sparse_row(np.int32(np.array([ele_minus_stim[x]])), np.array([amp * value[0, x]]), n_electrodes)
+        for x in range(0, n_projection)]
+    stim["stim_pattern"] = [stim_plus_stim[x] + stim_minus_stim[x] for x in range(0, n_projection)]
+    ind_dele = np.row_stack([ele_plus_stim, ele_minus_stim])
+    stim_plus_meas = [sparse_matrix_meas_pattern(ele_plus_meas, value, n_electrodes, ind_dele[:, x]) for x in
+                      range(0, n_projection)]
+    stim_minus_meas = [sparse_matrix_meas_pattern(ele_minus_meas, -1 * value, n_electrodes, ind_dele[:, x]) for x in
+                       range(0, n_projection)]
+    Z = [(stim_plus_meas[x] + stim_minus_meas[x]) for x in range(0, n_projection)]
+
+    stim["meas_pattern"] = [delate_zeros_rows(Z[x]) for x in range(0, n_projection)]
+    return stim
+
+
+
+def sparse_row(ind_y, value, len_row):
+    ind_x = np.int32(np.array(np.zeros_like(ind_y)))
+    return sp.csc_matrix((value, (ind_x, ind_y)), shape=(1, len_row))
+
+
+def sparse_matrix_meas_pattern(ind_y, value, len_matrix, ind_delete):
+    ind_x = np.linspace(0, len_matrix - 1, len_matrix)
+    X = sp.csc_matrix((value.reshape(-1), (ind_x, ind_y)), shape=(len_matrix, len_matrix))
+    X = X.toarray()
+    X[:, ind_delete] = 0
+
+    return sp.csc_matrix(X)
+
+
+def delate_zeros_rows(Z):
+    ZN = Z.toarray()
+    ind_zero_row = np.argwhere(np.sum(abs(ZN), axis=1) < 2)
+    ZN = np.delete(ZN, ind_zero_row, axis=0)
+
+    return sp.csc_matrix(ZN)
